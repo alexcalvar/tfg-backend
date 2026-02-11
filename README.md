@@ -2,8 +2,8 @@
 
 > **Trabajo de Fin de Grado** - Escuela Superior de Ingeniería Informática (ESEI), Universidad de Vigo.
 >
-> **Autor:** [Alejandro Calvar]
-> **Tutor/a:** [Martín Pérez]
+> **Autor:** Alejandro Calvar
+> **Tutor/a:** Martín Pérez
 > **Curso:** 2025/2026
 
 ## 📖 Descripción del Proyecto
