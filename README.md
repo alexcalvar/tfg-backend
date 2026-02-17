@@ -3,7 +3,6 @@
 > **Trabajo de Fin de Grado** - Escuela Superior de Ingeniería Informática (ESEI), Universidad de Vigo.
 >
 > **Autor:** Alejandro Calvar
-> **Tutor/a:** Martín Pérez
 > **Curso:** 2025/2026
 
 ## 📖 Descripción del Proyecto
@@ -16,16 +15,16 @@ El núcleo del sistema implementa un pipeline de **6 fases** que transforma dato
 
 El proyecto está construido sobre una arquitectura moderna y asíncrona:
 
-* **Lenguaje:** Python 3.11+
-* **API Framework:** FastAPI (Uvicorn server)
-* **Visión por Computador:** OpenCV (cv2)
+* **Lenguaje:** Python 3.11
+* **API Framework:** FastAPI 
+* **Visión por Computador:** OpenCV 
 * **Orquestación IA:** LangChain 
 * **Inferencia Local:** Ollama 
 * **Validación de Datos:** Pydantic
 
 ## ⚙️ Arquitectura del Sistema
 
-El backend sigue una arquitectura limpia (Clean Architecture) dividida en capas:
+El backend sigue una arquitectura dividida en capas:
 
 ```text
 src/
