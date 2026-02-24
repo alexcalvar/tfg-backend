@@ -1,0 +1,37 @@
+[
+    {
+        "detectado": true,
+        "descripcion": "Un perro de color marrón con una mancha blanca en la cabeza, caminando por un sendero cubierto de hojas en un bosque",
+        "confianza": "alto",
+        "archivo": "frame_0.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Un perro de color marrón con orejas largas y una cola corta, caminando por un sendero cubierto de hojas en un bosque",
+        "confianza": "alto",
+        "archivo": "frame_1.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Un perro de color marrón con orejas puntiagudas y cola larga camina por un sendero cubierto de hojas en un bosque",
+        "confianza": "alto",
+        "archivo": "frame_2.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Un perro de color marrón con una raya negra en la espalda, con una raya blanca en la parte inferior de su cola, con orejas redondas y un hocico negro, con una mancha blanca en su cuello, con una mancha blanca en su pecho, con una mancha blanca en su barriga, con una mancha blanca en su espalda, con una mancha blanca en su cuello, con una mancha blanca en su pecho, con una mancha blanca en su barriga, con una mancha blanca en su espalda, con una mancha blanca en su cuello, con una mancha blanca en su pecho, con una mancha blanca en su barriga, con una mancha blanca en su espalda, con una mancha blanca en su cuello, con una mancha blanca en su pecho, con una mancha blanca en su barriga, con una mancha blanca en su espalda, con una mancha blanca en su cuello, con una mancha blanca en su pecho, con una mancha blanca en su barriga, con una mancha blanca en su espalda, con una mancha blanca en su cuello, con una mancha blanca en su pecho, con una mancha blanca en su barriga, con una mancha blanca en su espalda, con una mancha blanca en su cuello, con una mancha blanca en su pecho, con una mancha blanca en su barriga, con una mancha blanca en su espalda, con una mancha blanca en su cuello, con una mancha blanca en su pecho, con una mancha blanca en su barriga, con una mancha blanca en su espalda, con una mancha blanca en su cuello, con una mancha blanca en su pecho, con una mancha blanca en su barriga, con una mancha blanca en su espalda, con una mancha blanca en su cuello, con una mancha blanca en su pech, ",
+        "archivo": "frame_3.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Un perro de color marrón con un collar negro en un bosque",
+        "confianza": "alto",
+        "archivo": "frame_4.jpg"
+    },
+    {
+        "detectado": false,
+        "descripcion": "La imagen es de un bosque con mucha hoja seca y un árbol en la parte superior",
+        "confianza": "bajo",
+        "archivo": "frame_5.jpg"
+    }
+]

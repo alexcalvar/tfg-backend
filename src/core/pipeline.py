@@ -1,32 +1,36 @@
 import os
 import json
-import glob # Para buscar archivos 
+import time
 
 from utils.video_utils import VideoLoader
 from core.image_processor import VLMProcessor
 
 class VLMPipeline:
-    def __init__(self, base_folder = "data"):
-        self.upload_dir = os.path.join(base_folder,"uploads")
-        self.frames_dir = os.path.join(base_folder,"frames")
-        self.results_dir = os.path.join(base_folder,"results")
-
-        self.connector = VLMProcessor()
-
-    def _limpiar_frames_antiguos(self):
-        print(" Limpiando carpeta de frames antiguos...")
+    def __init__(self, model_instance, message_strategy,system_prompt,task_template, base_folder = "data", result_folder = "projects"):
         
-        archivos = glob.glob(os.path.join(self.frames_dir, "*.jpg"))
+        self.vlm = model_instance
+        self.message_strategy = message_strategy
+
+        self.upload_dir = os.path.join(base_folder,"videos_test")
+
+        # Generamos un ID único basado en la hora actual 
+        run_id = f"run_{int(time.time())}"
         
-        for archivo in archivos:
-            try:
-                os.remove(archivo) 
-            except Exception as e:
-                print(f" No se pudo borrar {archivo}: {e}")        
-    
+        self.base_run_dir = os.path.join(result_folder, run_id)
+        self.frames_dir = os.path.join(self.base_run_dir,"frames")
+        self.results_dir = os.path.join(self.base_run_dir,"results")
+        
+        os.makedirs(self.frames_dir, exist_ok=True)
+        os.makedirs(self.results_dir, exist_ok=True)
+        
+        print(f" Nueva ejecución creada en: {self.base_run_dir}")
+
+        self.connector = VLMProcessor(self.vlm, self.message_strategy, system_prompt, task_template)
+
+
     def process_video(self, file_name, prompt_usuario):
 
-        self._limpiar_frames_antiguos()
+        interval_time = 0.5
 
         video_path = os.path.join(self.upload_dir,file_name)
 
@@ -34,7 +38,7 @@ class VLMPipeline:
 
         print("Extracción de frames ...")
 
-        num_frames = video_engine.extract_frames(interval=0.5) #se obtiene los frames del video
+        num_frames = video_engine.extract_frames(interval_time) #se obtiene los frames del video
 
         print(f"generados {num_frames} frames del video : {file_name}")
 

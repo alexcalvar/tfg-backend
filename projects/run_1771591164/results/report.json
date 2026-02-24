@@ -1,0 +1,152 @@
+[
+    {
+        "detectado": true,
+        "descripcion": "Hay un coche rojo en la imagen",
+        "confianza": "alto",
+        "archivo": "frame_0.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "En la imagen se observa un coche rojo en la carretera",
+        "confianza": "alto",
+        "archivo": "frame_1.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Hay un coche rojo en la imagen",
+        "confianza": "alto",
+        "archivo": "frame_2.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "En la imagen se observa un coche rojo en la carretera",
+        "confianza": "alto",
+        "archivo": "frame_3.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "En la imagen se observa un coche rojo en la carretera",
+        "confianza": "alto",
+        "archivo": "frame_4.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "En la imagen se observa un coche rojo en la carretera",
+        "confianza": "alto",
+        "archivo": "frame_5.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "En la imagen se observa un coche rojo en la carretera",
+        "confianza": "alto",
+        "archivo": "frame_6.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Un coche rojo se ve en la imagen",
+        "confianza": "alto",
+        "archivo": "frame_7.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Un coche rojo se ve en la imagen",
+        "confianza": "alto",
+        "archivo": "frame_8.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Un coche rojo se ve en la imagen",
+        "confianza": "alto",
+        "archivo": "frame_9.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Hay un coche rojo en la imagen",
+        "confianza": "alto",
+        "archivo": "frame_10.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Hay un coche rojo en la imagen",
+        "confianza": "alto",
+        "archivo": "frame_11.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "La imagen muestra un coche rojo en la carretera",
+        "confianza": "alto",
+        "archivo": "frame_12.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Hay un coche rojo en la imagen",
+        "confianza": "alto",
+        "archivo": "frame_13.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Hay un coche rojo en la imagen",
+        "confianza": "alto",
+        "archivo": "frame_14.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "En la imagen se observa un coche rojo en la carretera",
+        "confianza": "alto",
+        "archivo": "frame_15.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Un coche rojo se ve en la imagen",
+        "confianza": "alto",
+        "archivo": "frame_16.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Hay un coche rojo en la imagen",
+        "confianza": "alto",
+        "archivo": "frame_17.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Un coche rojo en la carretera",
+        "confianza": "alto",
+        "archivo": "frame_18.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Hay un coche rojo en la imagen",
+        "confianza": "alto",
+        "archivo": "frame_19.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Un coche rojo en la carretera",
+        "confianza": "alto",
+        "archivo": "frame_20.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "La imagen es de un coche rojo en una carretera",
+        "confianza": "alto",
+        "archivo": "frame_21.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Un coche rojo se ve en la carretera",
+        "confianza": "alto",
+        "archivo": "frame_22.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Un coche rojo se ve en la parte inferior de la imagen",
+        "confianza": "alto",
+        "archivo": "frame_23.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Un coche rojo se ve en la carretera",
+        "confianza": "alto",
+        "archivo": "frame_24.jpg"
+    }
+]

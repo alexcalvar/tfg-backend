@@ -1,0 +1,74 @@
+[
+    {
+        "detectado": true,
+        "descripcion": "Un perro de color marrón con una mancha blanca en la cabeza, caminando por un sendero cubierto de hojas en un bosque",
+        "confianza": "alto",
+        "archivo": "frame_0.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Un perro de color marrón camina por un sendero cubierto de hojas en un bosque",
+        "confianza": "alto",
+        "archivo": "frame_1.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Un perro de color marrón con orejas largas y una cola corta, caminando por un sendero cubierto de hojas en un bosque",
+        "confianza": "alto",
+        "archivo": "frame_2.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Un perro de color marrón está caminando por un sendero cubierto de hojas en un bosque",
+        "confianza": "alto",
+        "archivo": "frame_3.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Un perro de color marrón con orejas puntiagudas y una cola larga y puntiaguda, caminando por un sendero cubierto de hojas en un bosque",
+        "confianza": "alto",
+        "archivo": "frame_4.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Un perro de color marrón con una raya blanca en su cuello, con una rama en la boca, camina por un sendero cubierto de hojas en un bosque",
+        "confianza": "alto",
+        "archivo": "frame_5.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Un perro de color marrón con una raya blanca en su espalda, con una rama en la boca, camina por un sendero de hojas secas en un bosque",
+        "confianza": "alto",
+        "archivo": "frame_6.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Un perro de color marrón con una raya blanca en la frente, con una rama en la boca, caminando en un bosque",
+        "confianza": "alto",
+        "archivo": "frame_7.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Un perro de color marrón con una mancha negra en la parte de la espalda, con una mancha blanca en la parte de la barriga, con una mancha negra en la parte de la cola, con una mancha blanca en la parte de la pata, con una mancha negra en la parte de la oreja, con una mancha blanca en la parte de la nariz, con una mancha negra en la parte de la boca, con una mancha blanca en la parte de la mandibula, con una mancha negra en la parte de la cuello, con una mancha blanca en la parte de la espalda, con una mancha negra en la parte de la cola, con una mancha blanca en la parte de la pata, con una mancha negra en la parte de la oreja, con una mancha blanca en la parte de la nariz, con una mancha negra en la parte de la boca, con una mancha blanca en la parte de la mandibula, con una mancha negra en la parte de la cuello, con una mancha blanca en la parte de la espalda, con una mancha negra en la parte de la cola, con una mancha blanca en la parte de la pata, con una mancha negra en la parte de la oreja, con una mancha blanca en la parte de la nariz, con una mancha negra en la parte de la boca, con una mancha blanca en la parte de la mandibula, con una mancha negra en la parte de la cuello, con una mancha blanca en la parte de la espalda, con una mancha negra en la parte de la cola, con una mancha blanca en la parte de la pata, con una mancha negra en la parte de la oreja, con una mancha blanca en la parte de la nariz, con una mancha negra en la parte de la boca, con una mancha blanca en la parte de la mandibula, con una mancha negra en la parte de la cuello, con una mancha blanca en la parte de la espalda, con una mancha negra en la parte de la cola, con una mancha blanca en la parte de la pata, con una mancha negra en la parte de la oreja, con una mancha blanca en la parte de la nariz, con una mancha neg…",
+        "confianza": "alto",
+        "archivo": "frame_8.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Un perro de color marron y gris con la cola levantada en un bosque",
+        "confianza": "alto",
+        "archivo": "frame_9.jpg"
+    },
+    {
+        "detectado": false,
+        "descripcion": "La imagen es de un bosque con mucha hoja y un árbol",
+        "confianza": "bajo",
+        "archivo": "frame_10.jpg"
+    },
+    {
+        "detectado": false,
+        "descripcion": "La imagen es de un bosque con mucha hoja y un árbol",
+        "confianza": "bajo",
+        "archivo": "frame_11.jpg"
+    }
+]

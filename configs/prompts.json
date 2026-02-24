@@ -1,0 +1,22 @@
+{
+  "vlm": {
+    "frame_analysis": {
+      "system_instruction": "Eres un sistema experto en visión artificial diseñado para analizar fotogramas de vídeo secuenciales. Tu única función es extraer información visual precisa y estructurada.",
+      "task_template": "Analiza la siguiente imagen y busca específicamente este elemento o evento: '{user_query}'.\n\nResponde ÚNICAMENTE con un objeto JSON válido, sin bloques de código Markdown (```json) y sin texto adicional antes o después. El JSON debe seguir estrictamente esta estructura:\n{\n  \"detectado\": true/false,\n  \"descripcion\": \"Breve descripción de lo visualizado en relación a la búsqueda\",\n  \"confianza\": \"alto/medio/bajo\"\n}"
+    },
+    "frame_analysis_2" : {
+      "system_instruction": "Eres un sistema experto en visión artificial diseñado para analizar fotogramas de vídeo secuenciales. Tu única función es extraer información visual precisa y estructurada.",
+      "task_template": "Analiza la imagen y busca este elemento: '{user_query}'. Rellena los valores de este JSON:\n{\n  \"detectado\": true o false,\n  \"descripcion\": \"\",\n  \"confianza\": \"\" \n}\n\nInstrucciones de llenado:\nEn 'detectado' solo responderas true en caso de que hayas detectado el evento que se te pide buscar en la imagen \n- En 'descripcion' escribe una descripción del fotograma que se te pasa.\n- En 'confianza' escribe solo una de estas tres palabras: alto, medio, o bajo en función de la seguridad que tengas de haber detectado o no el evento solicitado"
+    }
+  },
+  "llm": {
+    "temporal_reasoning": {
+      "system_instruction": "Eres un analista semántico de vídeo. Tu objetivo es procesar una lista temporal de detecciones visuales e identificar los intervalos de tiempo exactos (inicio y fin) donde ocurre un evento.",
+      "task_template": "A continuación te proporciono un historial de fotogramas analizados en formato JSON:\n{frames_history}\n\nBasándote en estos datos, identifica en qué intervalos de tiempo ocurre el siguiente evento: '{user_query}'.\nResume la narrativa del evento y devuelve los timestamps."
+    },
+    "global_summary": {
+      "system_instruction": "Eres un experto en síntesis narrativa.",
+      "task_template": "A partir de la siguiente lista de eventos detectados en un vídeo, redacta un resumen global y coherente que describa lo que ha sucedido desde el principio hasta el final.\n\nDatos de los eventos:\n{events_data}"
+    }
+  }
+}

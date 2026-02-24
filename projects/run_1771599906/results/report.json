@@ -1,0 +1,56 @@
+[
+    {
+        "detectado": true,
+        "descripcion": "La autopista es muy transitada en la imagen.",
+        "confianza": "alto",
+        "archivo": "frame_0.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "La autopista es muy transitada con varios vehículos en la imagen.",
+        "confianza": "alto",
+        "archivo": "frame_1.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "La autopista es muy transitada con varios vehículos en la imagen.",
+        "confianza": "alto",
+        "archivo": "frame_2.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "La autopista es muy transitada en la imagen.",
+        "confianza": "alto",
+        "archivo": "frame_3.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "La autopista es muy transitada en la imagen.",
+        "confianza": "alto",
+        "archivo": "frame_4.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "La imagen muestra una autopista con un flujo de vehículos moderado, con un número de coches y camiones en movimiento, pero no tan denso como para considerarla muy transitada.",
+        "confianza": "medio",
+        "archivo": "frame_5.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "La imagen muestra una autopista con un flujo de vehículos moderado, con un número de coches y camiones en movimiento, pero no tan denso como para considerarla muy transitada.",
+        "confianza": "medio",
+        "archivo": "frame_6.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "La imagen muestra una autopista con un flujo de tráfico moderado, con un número de vehículos en movimiento que no es extremadamente alto o bajo, pero sí suficiente para considerarla transitada.",
+        "confianza": "medio",
+        "archivo": "frame_7.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "La imagen muestra una autopista con un flujo de vehículos moderado, con un número de coches y camiones en movimiento, pero no es tan transitado como en la mayoría de las autopistas",
+        "confianza": "medio",
+        "archivo": "frame_8.jpg"
+    }
+]
