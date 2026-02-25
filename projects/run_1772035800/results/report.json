@@ -1,0 +1,68 @@
+[
+    {
+        "detectado": true,
+        "descripcion": "Un perro de pelaje marrón y negro camina por un sendero forestal cubierto de hojas secas, rodeado de árboles y vegetación en un entorno natural.",
+        "confianza": "alto",
+        "archivo": "frame_0.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Un perro marrón está caminando por un sendero forestal cubierto de hojas secas, rodeado de árboles deshojados y vegetación. El entorno muestra un bosque en otoño con troncos caídos y maleza en los bordes.",
+        "confianza": "alto",
+        "archivo": "frame_1.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Un perro de tamaño mediano, con pelaje marrón y negro, está caminando por un sendero forestal cubierto de hojas secas. El entorno es un bosque con árboles desnudos y vegetación baja, con un tronco caído a la izquierda.",
+        "confianza": "alto",
+        "archivo": "frame_2.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "En un bosque con suelo cubierto de hojas secas, un perro de pelaje dorado corre hacia la cámara por un sendero entre árboles. A la izquierda, hay troncos caídos cubiertos de musgo y vegetación, mientras que a la derecha se observa una zona con hierba y árboles más jóvenes.",
+        "confianza": "alto",
+        "archivo": "frame_3.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Un perro de pelaje marrón corre por un sendero forestal cubierto de hojas secas, sosteniendo un palo en su boca. El entorno muestra árboles deshojados y vegetación baja, con rocas cubiertas de musgo a la izquierda.",
+        "confianza": "alto",
+        "archivo": "frame_4.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Un perro de pelaje claro corre por un sendero forestal cubierto de hojas secas, sosteniendo un largo palo en su boca. El entorno muestra árboles, vegetación y un tronco caído con musgo.",
+        "confianza": "alto",
+        "archivo": "frame_5.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Un perro de raza pastor alemán camina por un sendero forestal cubierto de hojas secas, llevando un tronco largo en la boca. El entorno muestra árboles, vegetación y un suelo cubierto de hojas caídas.",
+        "confianza": "alto",
+        "archivo": "frame_6.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Un perro de pelaje marrón y blanco camina por un sendero cubierto de hojas secas, sosteniendo un largo tronco en su boca, con un fondo de bosque con árboles y vegetación.",
+        "confianza": "alto",
+        "archivo": "frame_7.jpg"
+    },
+    {
+        "archivo": "frame_8.jpg"
+    },
+    {
+        "archivo": "frame_9.jpg"
+    },
+    {
+        "detectado": false,
+        "descripcion": "La imagen muestra un paisaje forestal con suelo cubierto de hojas secas marrones, vegetación baja y un tronco caído con raíces expuestas. En el fondo se observan árboles y arbustos, pero no hay presencia de ningún animal, incluido un perro.",
+        "confianza": "alto",
+        "archivo": "frame_10.jpg"
+    },
+    {
+        "detectado": false,
+        "descripcion": "La imagen muestra un paisaje forestal con suelo cubierto de hojas secas, un tronco de árbol con raíces expuestas y vegetación baja. No hay presencia de animales, incluido un perro.",
+        "confianza": "alto",
+        "archivo": "frame_11.jpg"
+    }
+]

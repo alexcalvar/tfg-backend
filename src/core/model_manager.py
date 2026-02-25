@@ -49,7 +49,7 @@ class ModelManager:
                 return modelo, message_strategy
             
             case "openroute":
-                print(f"Conectando con Nvidia en remoto:  {self.vlm_name}")
+                print(f"Conectando con Open Route en remoto:  {self.vlm_name}")
 
                 api_key_or=os.getenv("OPEN_ROUTE_API_KEY")
 

@@ -5,7 +5,6 @@ import asyncio
 from dotenv import load_dotenv
 
 from core.pipeline import VLMPipeline 
-from core.adapters.message_builders import CloudMessageBuilder,LocalMessageBuilder
 from core.model_manager import ModelManager
 
 def load_json_file ( ruta_archivo):
@@ -18,10 +17,10 @@ async def main():
 
     print("--- INICIANDO SISTEMA DE ANÁLISIS DE VÍDEO TFG ---")
     
-    # 1. Cargar variables de entorno 
+    #  Cargar variables de entorno 
     load_dotenv()
     
-    # 2. Cargar configuraciones en memoria 
+    #  Cargar configuraciones en memoria 
     rutas_modelos = "configs/models_config.json"
     rutas_prompts = "configs/prompts.json"
     
@@ -44,12 +43,11 @@ async def main():
     print(" Arrancando sistema ...")
     print("Seleccione el VLM que desea utilizar:")
     
-    # 1. Obtenemos la lista de todas las claves (modelos) del JSON
+    # Obtenemos la lista de todas los modelos del json
     modelos_disponibles = list(config_modelos["vlms"].keys())
     
-    # 2. Generamos el menú dinámicamente con un bucle
     for i, clave_modelo in enumerate(modelos_disponibles, start=1):
-        desc = config_modelos["vlms"][clave_modelo].get("descripcion", clave_modelo)
+        desc = config_modelos["vlms"][clave_modelo].get("model_string", clave_modelo)
         print(f"{i} - {desc}")
         
     n = input("\nIntroduzca el numero del modelo que desea usar: ")

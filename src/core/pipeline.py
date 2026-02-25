@@ -15,13 +15,17 @@ class VLMPipeline:
         self.upload_dir = os.path.join(base_folder,"videos_test")
 
         # Generamos un ID único basado en la hora actual 
-        run_id = f"run_{int(time.time())}"
+        run_id = f"project_{int(time.time())}"
         
         self.base_run_dir = os.path.join(result_folder, run_id)
+        self.annotatios_dir = os.path.join(self.base_run_dir,"annotations")
         self.frames_dir = os.path.join(self.base_run_dir,"frames")
+        self.logs_dir = os.path.join(self.base_run_dir,"logs")
         self.results_dir = os.path.join(self.base_run_dir,"results")
         
+        os.makedirs(self.annotatios_dir, exist_ok=True)
         os.makedirs(self.frames_dir, exist_ok=True)
+        os.makedirs(self.logs_dir, exist_ok=True)
         os.makedirs(self.results_dir, exist_ok=True)
         
         print(f" Nueva ejecución creada en: {self.base_run_dir}")
@@ -62,7 +66,7 @@ class VLMPipeline:
 
         video_path = os.path.join(self.upload_dir,file_name)
         video_engine = VideoLoader(video_path, self.frames_dir)
-        interval_time = 0.5
+        interval_time = 0.1
 
         cola_frames = asyncio.Queue()
         

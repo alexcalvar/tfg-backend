@@ -48,11 +48,15 @@ class VLMProcessor:
         final_prompt = self.message_strategy.build_messages(self.sys_prompt, prompt_formateado, image_b64)
     
         try:
-            vlm_estricto = self.vlm.with_structured_output(FrameAnalysisResult)
-
-            frame_response = vlm_estricto.invoke(final_prompt) #llamar al motor con salida definida
-
-            return frame_response.model_dump()
+            if False : 
+                vlm_estricto = self.vlm.with_structured_output(FrameAnalysisResult)
+                frame_response = vlm_estricto.invoke(final_prompt) #llamar al motor con salida definida
+                return frame_response.model_dump()
+            
+            else :
+                response = self.vlm.invoke(final_prompt)
+                clear_response = self._clean_json_string(response.content)
+                return json.loads(clear_response)
 
         except Exception as e:
             print(f"Error analizando {e}")
