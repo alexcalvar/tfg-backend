@@ -1,6 +1,7 @@
 import cv2 
 import os
 import math
+import asyncio
 
 class VideoLoader:
     def __init__(self, video_path, output_folder):
@@ -9,7 +10,7 @@ class VideoLoader:
         os.makedirs(output_folder, exist_ok=True) 
 
 
-    def extract_frames(self, interval):
+    async def extract_frames(self, interval, cola_frames : asyncio.Queue ):
         cap = cv2.VideoCapture(self.video_path)
 
         if cap.isOpened():
@@ -51,6 +52,9 @@ class VideoLoader:
                 
                 cv2.imwrite(save_path, frame_redimensionado)
 
+                paquete_frame = ( save_path, count_frame )
+                await cola_frames.put(paquete_frame) # se almacena la ruta en la cola para q luego el procesador acceda a la ruta del framse
+
                 print(f"guardado frame nº {count_frame} (Posición real: {n_frame} - Optimizado)")
 
                 n_frame += step
@@ -58,11 +62,15 @@ class VideoLoader:
 
                 #se decide utilizar cap.set para avanzar directametne al frame a analizar en vez de 
                 #avanzar recorriendo todos los frames y solo seleccionando los esperados
-                cap.set(cv2.CAP_PROP_POS_FRAMES, n_frame)    
+                cap.set(cv2.CAP_PROP_POS_FRAMES, n_frame)  
+
+                #  CRÍTICO: Obligamos al bucle a ceder el control al event loop
+                # Esto permite que el Consumidor (VLM) envíe la petición a la API
+                # sin esperar a que acabe el vídeo entero.
+                await asyncio.sleep(0.01)  
         
         cap.release()
 
-        return count_frame
 
 
 

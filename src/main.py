@@ -1,5 +1,7 @@
 import os
 import json
+import asyncio
+
 from dotenv import load_dotenv
 
 from core.pipeline import VLMPipeline 
@@ -12,7 +14,7 @@ def load_json_file ( ruta_archivo):
     with open(ruta_archivo, "r", encoding="utf-8") as file:
         return json.load(file)
 
-def main():
+async def main():
 
     print("--- INICIANDO SISTEMA DE ANÁLISIS DE VÍDEO TFG ---")
     
@@ -33,7 +35,7 @@ def main():
     sys_prompt = config_prompts["vlm"]["frame_analysis_2"]["system_instruction"]
 
    
-    ruta_video = os.path.join("data", "videos_test", video_name)
+    ruta_video = os.path.join("data_ejs", "videos_test", video_name)
     if not os.path.exists(ruta_video):
         print(f" ERROR: No encuentro el vídeo en: {ruta_video}")
         print("Revisa que el nombre sea correcto y esté en la carpeta data/uploads.")
@@ -75,10 +77,10 @@ def main():
         pipeline = VLMPipeline( vlm_model,strategy, sys_prompt, task_template) 
         
         # Ejecutamos
-        pipeline.process_video(video_name, prompt)
+        await pipeline.process_video(video_name, prompt)
     
     except Exception as e:
         print(f" Ocurrió un error inesperado: {e}")
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

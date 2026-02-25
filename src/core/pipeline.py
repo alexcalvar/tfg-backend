@@ -1,12 +1,13 @@
 import os
 import json
 import time
+import asyncio
 
 from utils.video_utils import VideoLoader
 from core.image_processor import VLMProcessor
 
 class VLMPipeline:
-    def __init__(self, model_instance, message_strategy,system_prompt,task_template, base_folder = "data", result_folder = "projects"):
+    def __init__(self, model_instance, message_strategy,system_prompt,task_template, base_folder = "data_ejs", result_folder = "projects"):
         
         self.vlm = model_instance
         self.message_strategy = message_strategy
@@ -25,40 +26,59 @@ class VLMPipeline:
         
         print(f" Nueva ejecución creada en: {self.base_run_dir}")
 
-        self.connector = VLMProcessor(self.vlm, self.message_strategy, system_prompt, task_template)
+        self.processor = VLMProcessor(self.vlm, self.message_strategy, system_prompt, task_template)
 
+    async def _analizar_frames(self, cola_frames : asyncio.Queue, prompt_usuario, resultados : list):
 
-    def process_video(self, file_name, prompt_usuario):
-
-        interval_time = 0.5
-
-        video_path = os.path.join(self.upload_dir,file_name)
-
-        video_engine = VideoLoader(video_path, self.frames_dir)
-
-        print("Extracción de frames ...")
-
-        num_frames = video_engine.extract_frames(interval_time) #se obtiene los frames del video
-
-        print(f"generados {num_frames} frames del video : {file_name}")
-
-        resultados_acumulados = []
+        while True:
         
-        for i in range(0, num_frames):
+            paquete = await cola_frames.get()
             
-            frame_path = f"{self.frames_dir}/frame_{i}.jpg"
+            if paquete is None:
+                # Importante: Marcar el None como procesado también si usas join() en el futuro
+                cola_frames.task_done()
+                break  
+
+            # 3. Desempaquetar de forma segura
+            frame_path, n_frame = paquete
 
             try:
-
-                respuesta_dict = self.connector.analyze_frame(prompt_usuario, frame_path)
-
-                respuesta_dict["archivo"] = f"frame_{i}.jpg"
-
-                resultados_acumulados.append(respuesta_dict)
-                print(f"  Terminado: frame{i}")
-
+                respuesta_dict = await asyncio.to_thread(
+                    self.processor.analyze_frame, prompt_usuario, frame_path
+                )
+                respuesta_dict["archivo"] = f"frame_{n_frame}.jpg"
+                resultados.append(respuesta_dict)
+            
             except Exception as e:
-                print(f" Error analizando el frame numero {i}: {e}")
+                print(f" Error analizando el frame numero {n_frame}: {e}")
+            
+            finally:
+                print(f"  Terminado: frame{n_frame}")
+                cola_frames.task_done()
+            
+
+
+    async def process_video(self, file_name, prompt_usuario):
+
+        video_path = os.path.join(self.upload_dir,file_name)
+        video_engine = VideoLoader(video_path, self.frames_dir)
+        interval_time = 0.5
+
+        cola_frames = asyncio.Queue()
+        
+        print("Extracción de frames ...")
+        productor_task = asyncio.create_task(video_engine.extract_frames(interval_time, cola_frames))
+
+        resultados_acumulados = []
+
+        consumidor_task = asyncio.create_task(self._analizar_frames(cola_frames, prompt_usuario, resultados_acumulados))
+
+        await productor_task
+
+        await cola_frames.put(None)
+
+        await consumidor_task
+       
         results_file_name = "report.json"
         results_file_path = os.path.join(self.results_dir, results_file_name)
 

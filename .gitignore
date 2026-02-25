@@ -23,7 +23,7 @@ Thumbs.db
 
 # --- PROYECTO TFG: DATOS DINÁMICOS ---
 # Ignoramos los videos y fotos, pero queremos mantener la estructura de carpetas
-data/
+data_ejs/
 projects/**/frames/
 projects/**/logs/
 projects/**/annotations/

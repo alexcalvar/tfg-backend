@@ -1,6 +1,7 @@
 import base64 
 import json
 import os
+import asyncio
 
 from langchain_core.language_models.chat_models import BaseChatModel
 from core.adapters.message_builders import MessageBuilderStrategy
@@ -17,7 +18,7 @@ class VLMProcessor:
         with open(image_path, "rb") as file:
             return base64.b64encode(file.read()).decode("utf-8")
         
-    def _clean_json_string(self, text: str) :
+    def _clean_json_string(self, text: str) :   
         """Limpia el output del LLM para asegurar que es parseable por json.loads"""
         text = text.strip()
         # Si el modelo responde con bloques de markdown, se limpian
@@ -37,7 +38,7 @@ class VLMProcessor:
 
 
 
-    def analyze_frame( self,user_prompt, image_path):
+    def  analyze_frame( self,user_prompt, image_path):
         image_b64 = self._encode_image( image_path)
 
         # Metemos la pregunta del usuario dentro de nuestra plantilla estricta
@@ -51,7 +52,7 @@ class VLMProcessor:
 
             frame_response = vlm_estricto.invoke(final_prompt) #llamar al motor con salida definida
 
-            return frame_response.model_dump
+            return frame_response.model_dump()
 
         except Exception as e:
             print(f"Error analizando {e}")
