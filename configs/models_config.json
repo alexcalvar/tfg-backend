@@ -1,0 +1,73 @@
+{
+    "vlms": {
+        "gemini_rapido": {
+            "provider": "google",
+            "model_string": "gemini-1.5-flash",
+            "temperature": 0.0,
+            "max_tokens": 1024,
+            "descripcion": "Modelo multimodal rápido. Excelente para ver colores y procesar frames a alta velocidad."
+        },
+        "gemini_pro": {
+            "provider": "google",
+            "model_string": "gemini-1.5-pro",
+            "temperature": 0.0,
+            "max_tokens": 1024,
+            "descripcion": "Modelo multimodal avanzado. Más lento, pero con mayor capacidad de razonamiento visual para escenas complejas."
+        },
+        "llama3.2-vision": {
+            "provider": "ollama",
+            "model_string": "llama3.2-vision",
+            "temperature": 0.0,
+            "format": "json",
+            "descripcion": "Modelo grande. Lento con alta precisión de detalle."
+        },
+        "qwen_local": {
+            "provider": "ollama",
+            "model_string": "qwen3-vl:8b", 
+            "temperature": 0.0,
+            "format": "json",
+            "descripcion": "Modelo Qwen 8B Oficial. Versión optimizada por Ollama."
+        },"gemma3_local": {
+            "provider": "ollama",
+            "model_string": "gemma3:4b",
+            "temperature": 0.0,
+            "format": "json",
+            "descripcion": "Modelo VLM de Google (4B). Excelente relación calidad/rendimiento en local."
+        },"qwen_oficial_4b": {
+            "provider": "ollama",
+            "model_string": "qwen3-vl:4b",
+            "temperature": 0.0,
+            "format": "json",
+            "descripcion": "Modelo Qwen oficial de 4B. El equilibrio perfecto entre inteligencia y consumo de RAM."
+        },
+        "nemotron_nvidia": {
+            "provider": "openroute",
+            "model_string": "nvidia/nemotron-nano-12b-v2-vl:free",
+            "temperature": 0.0,
+            "max_tokens": 1024,
+            "descripcion": "Modelo multimodal de Nvidia alojado en la nube vía OpenRouter."
+        },
+        "qwen_cloud_free": {
+            "provider": "openroute",
+            "model_string": "qwen/qwen2.5-vl-32b-instruct:free",
+            "temperature": 0.0,
+            "max_tokens": 1024,
+            "descripcion": "Modelo gigante de Qwen (32B) ejecutado en la nube vía OpenRouter."
+        }
+    },
+    
+    "llms": {
+        "groq_inteligente": {
+            "provider": "groq",
+            "model_string": "llama3-70b-8192",
+            "temperature": 0.0,
+            "descripcion": "Cerebro principal en la nube. Muy rápido y excelente razonamiento lógico."
+        },
+        "groq_rapido": {
+            "provider": "groq",
+            "model_string": "llama3-8b-8192",
+            "temperature": 0.0,
+            "descripcion": "Versión ligera de Llama 3. Ideal para pruebas ultrarrápidas."
+        }
+    }
+}

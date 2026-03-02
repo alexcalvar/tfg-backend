@@ -1,0 +1,91 @@
+import cv2 
+import os
+import math
+import asyncio
+
+class VideoLoader:
+    def __init__(self, video_path, output_folder):
+        self.video_path = video_path
+        self.output_folder = output_folder
+        os.makedirs(output_folder, exist_ok=True) 
+
+
+    async def extract_frames(self, interval, cola_frames : asyncio.Queue ):
+        cap = cv2.VideoCapture(self.video_path)
+
+        if cap.isOpened():
+            fps = cap.get(cv2.CAP_PROP_FPS)
+
+            total_frames = cap.get(cv2.CAP_PROP_FRAME_COUNT)
+            
+            
+            if fps > 0:
+                duration = total_frames / fps
+            else:
+                duration = 0
+                
+            print(f" DEBUG INFO:")
+            print(f"   - FPS detectados: {fps}")
+            print(f"   - Frames Totales: {total_frames}")
+            print(f"   - Duración calculada: {duration:.2f} segundos")
+            
+            step =math.ceil(fps * interval)
+            
+            #captura de fotogramas
+            n_frame = 0
+            count_frame = 0
+            max_intents = 3 # numero maximo de intentos q se realizan en caso de error en un frame
+
+            while cap.isOpened():
+
+                #ret es un boolean q verifica q se obtuvo un frame , es decir, no se llego al final todavia
+                ret, frame = cap.read()
+
+                if not ret:
+                    break
+
+                # optimizar los frames
+                # Redimensionamos a 640x360 para no saturar la RAM con Ollama
+                frame_redimensionado = cv2.resize(frame, (640, 360))
+
+                filename = f"frame_{count_frame}.jpg"
+                save_path = os.path.join(self.output_folder, filename)
+                
+                cv2.imwrite(save_path, frame_redimensionado)
+
+                paquete_frame = ( save_path, count_frame, max_intents)
+                await cola_frames.put(paquete_frame) # se almacena la ruta en la cola para q luego el procesador acceda a la ruta del framse
+
+                print(f"guardado frame nº {count_frame} (Posición real: {n_frame} - Optimizado)")
+
+                n_frame += step
+                count_frame += 1
+
+                #se decide utilizar cap.set para avanzar directametne al frame a analizar en vez de 
+                #avanzar recorriendo todos los frames y solo seleccionando los esperados
+                cap.set(cv2.CAP_PROP_POS_FRAMES, n_frame)  
+
+                # obligamos al bucle a ceder el control 
+                # esto permite que el consumidor envíe la petición a la api del modelo
+                # sin esperar a que acabe el vídeo entero.
+                await asyncio.sleep(0)  
+        
+        cap.release()
+
+
+
+
+
+# --- BLOQUE DE PRUEBA ---
+if __name__ == "__main__":
+    
+    video = "data/uploads/video_prueba_coches.mp4"
+    carpeta_salida = "data/frames"
+
+    if os.path.exists(video):
+        loader = VideoLoader(video, carpeta_salida)
+        # Extraer 1 por segundo
+        loader.extract_frames(interval=1) 
+    else:
+        print(f" No encuentro el vídeo en: {video}")
+        print("Crea la carpeta data/uploads y pon un vídeo ahí.")

@@ -1,7 +1,52 @@
+# --- PYTHON BÁSICO ---
 __pycache__/
+*.py[cod]
+*$py.class
+
+# --- ENTORNOS VIRTUALES ---
 venv/
+.venv/
+env/
+
+# --- VARIABLES DE ENTORNO (SECRETOS) ---
 .env
+.env.*
+!.env.example  # (Opcional) Si quieres subir un ejemplo sin claves reales
+
+# --- SISTEMA OPERATIVO ---
 .DS_Store
-data/
+Thumbs.db
+
+# --- CONFIGURACIÓN DE IDE (No subas tus preferencias personales) ---
+.vscode/
+.idea/
+
+# --- PROYECTO TFG: DATOS DINÁMICOS ---
+# Ignoramos los videos y fotos, pero queremos mantener la estructura de carpetas
+data_ejs/
+projects/**/frames/
+projects/**/logs/
+projects/**/annotations/
+# Si quieres ignorar los resultados json locales también:
+# projects/**/results/
+
+# --- ARCHIVOS MULTIMEDIA  ---
 *.mp4
+*.avi
+*.mov
+*.mkv
 *.jpg
+*.png
+*.jpeg
+
+# --- MODELOS DE IA  ---
+*.gguf
+*.pt
+*.pth
+*.bin
+models/
+
+# --- LOGS Y CACHÉ DE TESTS ---
+*.log
+.pytest_cache/
+htmlcov/
