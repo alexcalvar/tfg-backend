@@ -34,6 +34,7 @@ class VideoLoader:
             #captura de fotogramas
             n_frame = 0
             count_frame = 0
+            max_intents = 3 # numero maximo de intentos q se realizan en caso de error en un frame
 
             while cap.isOpened():
 
@@ -43,8 +44,8 @@ class VideoLoader:
                 if not ret:
                     break
 
-                # OPTIMIZACIÓN 
-                # Redimensionamos a 640x360 para no saturar la RAM de Ollama
+                # optimizar los frames
+                # Redimensionamos a 640x360 para no saturar la RAM con Ollama
                 frame_redimensionado = cv2.resize(frame, (640, 360))
 
                 filename = f"frame_{count_frame}.jpg"
@@ -52,7 +53,7 @@ class VideoLoader:
                 
                 cv2.imwrite(save_path, frame_redimensionado)
 
-                paquete_frame = ( save_path, count_frame )
+                paquete_frame = ( save_path, count_frame, max_intents)
                 await cola_frames.put(paquete_frame) # se almacena la ruta en la cola para q luego el procesador acceda a la ruta del framse
 
                 print(f"guardado frame nº {count_frame} (Posición real: {n_frame} - Optimizado)")
@@ -64,10 +65,10 @@ class VideoLoader:
                 #avanzar recorriendo todos los frames y solo seleccionando los esperados
                 cap.set(cv2.CAP_PROP_POS_FRAMES, n_frame)  
 
-                #  CRÍTICO: Obligamos al bucle a ceder el control al event loop
-                # Esto permite que el Consumidor (VLM) envíe la petición a la API
+                # obligamos al bucle a ceder el control 
+                # esto permite que el consumidor envíe la petición a la api del modelo
                 # sin esperar a que acabe el vídeo entero.
-                await asyncio.sleep(0.01)  
+                await asyncio.sleep(0)  
         
         cap.release()
 

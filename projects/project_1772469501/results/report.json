@@ -1,0 +1,62 @@
+[
+    {
+        "detectado": true,
+        "descripcion": "En el fotograma se observa un perro de pelaje marrón y negro caminando por un sendero forestal cubierto de hojas secas. El entorno muestra un bosque con árboles deshojados y vegetación verde en los bordes, además de un tronco caído a la izquierda.",
+        "archivo": "frame_0.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "A forest path covered in autumn leaves, with a golden retriever walking towards the camera. The scene is set in a wooded area with trees, some bare, and moss-covered rocks on the left side.",
+        "archivo": "frame_1.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "En el fotograma se observa un perro de pelaje marrón y negro caminando por un sendero forestal cubierto de hojas secas. El entorno es un bosque con árboles altos, ramas desnudas en algunos puntos, y vegetación baja a ambos lados del camino. El perro está ubicado en el centro de la imagen, mirando hacia la cámara, con un fondo de árboles que sugieren una estación otoñal o invernal.",
+        "archivo": "frame_2.jpg"
+    },
+    {
+        "detectado": false,
+        "descripcion": "Error: El modelo no pudo generar un JSON válido tras 3 reintentos en cola.",
+        "archivo": "frame_3.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "En un sendero forestal cubierto de hojas secas, un perro de pelaje marrón corre hacia la cámara, sosteniendo una rama en su boca. El entorno muestra árboles deshojados, vegetación baja y rocas cubiertas de musgo a la izquierda.",
+        "archivo": "frame_4.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "En el fotograma, un perro de pelaje dorado corre por un sendero forestal cubierto de hojas secas, llevando un largo palo en la boca. El entorno muestra un bosque con árboles, musgo en las rocas y vegetación baja.",
+        "archivo": "frame_5.jpg"
+    },
+    {
+        "detectado": false,
+        "descripcion": "Error: El modelo no pudo generar un JSON válido tras 3 reintentos en cola.",
+        "archivo": "frame_6.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Un perro de pelaje marrón y blanco con una correa en el cuello camina en un bosque cubierto de hojas secas, sosteniendo un tronco largo en la boca. El entorno incluye árboles, ramas y vegetación típica de un bosque oeste.",
+        "archivo": "frame_7.jpg"
+    },
+    {
+        "detectado": false,
+        "descripcion": "Error: El modelo no pudo generar un JSON válido tras 3 reintentos en cola.",
+        "archivo": "frame_8.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "En el fotograma se observa la parte posterior de un perro de pelaje marrón, probablemente un pastor alemán, caminando por un sendero cubierto de hojas secas en un bosque. El fondo muestra árboles, troncos cubiertos de musgo y vegetación baja.",
+        "archivo": "frame_9.jpg"
+    },
+    {
+        "detectado": false,
+        "descripcion": "La imagen muestra un paisaje forestal con suelo cubierto de hojas secas, un tronco caído con raíces expuestas y vegetación baja. No hay presencia de perros ni otros animales en el fotograma.",
+        "archivo": "frame_10.jpg"
+    },
+    {
+        "detectado": false,
+        "descripcion": "La imagen muestra un paisaje forestal con suelo cubierto de hojas secas de tonos marrones, vegetación baja y un tronco de árbol con raíces expuestas y musgo. No hay presencia de animales, incluido un perro.",
+        "archivo": "frame_11.jpg"
+    }
+]

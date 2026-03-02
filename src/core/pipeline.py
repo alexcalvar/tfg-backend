@@ -18,12 +18,12 @@ class VLMPipeline:
         run_id = f"project_{int(time.time())}"
         
         self.base_run_dir = os.path.join(result_folder, run_id)
-        self.annotatios_dir = os.path.join(self.base_run_dir,"annotations")
+        self.annotations_dir = os.path.join(self.base_run_dir,"annotations")
         self.frames_dir = os.path.join(self.base_run_dir,"frames")
         self.logs_dir = os.path.join(self.base_run_dir,"logs")
         self.results_dir = os.path.join(self.base_run_dir,"results")
         
-        os.makedirs(self.annotatios_dir, exist_ok=True)
+        os.makedirs(self.annotations_dir, exist_ok=True)
         os.makedirs(self.frames_dir, exist_ok=True)
         os.makedirs(self.logs_dir, exist_ok=True)
         os.makedirs(self.results_dir, exist_ok=True)
@@ -34,30 +34,63 @@ class VLMPipeline:
 
     async def _analizar_frames(self, cola_frames : asyncio.Queue, prompt_usuario, resultados : list):
 
+        MAX_INTENTOS_COLA = 3
+
         while True:
         
             paquete = await cola_frames.get()
             
             if paquete is None:
-                # Importante: Marcar el None como procesado también si usas join() en el futuro
                 cola_frames.task_done()
                 break  
 
-            # 3. Desempaquetar de forma segura
-            frame_path, n_frame = paquete
+            # Desempaquetar 
+            frame_path, n_frame, max_intents = paquete
 
             try:
                 respuesta_dict = await asyncio.to_thread(
                     self.processor.analyze_frame, prompt_usuario, frame_path
                 )
-                respuesta_dict["archivo"] = f"frame_{n_frame}.jpg"
-                resultados.append(respuesta_dict)
-            
-            except Exception as e:
+
+                if "detectado" in respuesta_dict and "descripcion" in respuesta_dict:
+                    # json correcto, se guarda 
+                    respuesta_dict["archivo"] = f"frame_{n_frame}.jpg"
+                    resultados.append(respuesta_dict)
+                    print(f" Terminado: frame_{n_frame}")
+                
+                else:
+                        # enviar al final de la lista 
+                    actual_intent=max_intents-1
+
+                    if max_intents == 0 :
+                        respuesta_dict = ({
+                            "detectado": False,
+                            "descripcion": f"Error: El modelo no pudo generar un JSON válido tras {MAX_INTENTOS_COLA} reintentos en cola.",
+                        })
+
+                        respuesta_dict["archivo"] = f"frame_{n_frame}.jpg"
+                        resultados.append(respuesta_dict)
+                    
+                        print(f"  [ERROR] Frame {n_frame} falló demasiadas veces. Guardando resultado por defecto.")
+                    
+                    else:
+                        reintentar_paquete = (frame_path, n_frame, actual_intent)
+                        await cola_frames.put(reintentar_paquete)
+
+            except asyncio.CancelledError:
+                break
+
+            except Exception as e: 
                 print(f" Error analizando el frame numero {n_frame}: {e}")
+                resultados.append({
+                    "detectado": False,
+                    "descripcion": f"Error de conexión o sistema: {str(e)}",
+                    "archivo": f"frame_{n_frame}.jpg"
+                })
             
             finally:
-                print(f"  Terminado: frame{n_frame}")
+                #  avisar a la cola de que esta extracción concreta ya se procesó 
+                #  porque el put() cuenta como un elemento nuevo
                 cola_frames.task_done()
             
 
@@ -66,7 +99,7 @@ class VLMPipeline:
 
         video_path = os.path.join(self.upload_dir,file_name)
         video_engine = VideoLoader(video_path, self.frames_dir)
-        interval_time = 0.1
+        interval_time = 0.5
 
         cola_frames = asyncio.Queue()
         
@@ -79,9 +112,14 @@ class VLMPipeline:
 
         await productor_task
 
-        await cola_frames.put(None)
+        await cola_frames.join() #esperar a q la cola se vacie  
 
-        await consumidor_task
+        consumidor_task.cancel()
+
+        try:
+            resultados_acumulados.sort(key=lambda x: int(x["archivo"].split('_')[1].split('.')[0]))
+        except Exception:
+            pass # si falla al reordenar devolver la lista tal cual 
        
         results_file_name = "report.json"
         results_file_path = os.path.join(self.results_dir, results_file_name)

@@ -4,7 +4,6 @@ from langchain_core.messages import HumanMessage, SystemMessage
 class MessageBuilderStrategy(ABC):
     """
     Clase abstracta que define el contrato para todos los constructores de mensajes.
-    Cualquier estrategia nueva debe implementar el método build_messages.
     """
     
     @abstractmethod
@@ -17,9 +16,8 @@ class MessageBuilderStrategy(ABC):
 
 class CloudMessageBuilder(MessageBuilderStrategy):
     """
-    Estrategia para modelos en la nube (Google , OpenRouter, OpenAI).
-    Estos modelos son grandes, robustos y entienden perfectamente la separación
-    entre SystemMessage y HumanMessage, así como el formato de diccionario estándar.
+    Estrategia para modelos en la nube.
+    Estos modelos  entienden la separación entre SystemMessage y HumanMessage, así como el formato de diccionario estándar.
     """
     def build_messages(self, system_prompt: str, user_prompt: str, image_b64: str) -> list:
         return [
