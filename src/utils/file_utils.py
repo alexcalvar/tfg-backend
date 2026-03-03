@@ -2,7 +2,7 @@ import os
 import json
 import base64
 
-def ensure_dir(path: str) -> None:
+def ensure_dir(path: str):
     """Crea un directorio de forma segura si no existe."""
     if path:
         os.makedirs(path, exist_ok=True)
@@ -15,7 +15,7 @@ def load_json(file_path: str) -> dict:
     with open(file_path, "r", encoding="utf-8") as file:
         return json.load(file)
 
-def save_json(data: list | dict, file_path: str) -> None:
+def save_json(data: list | dict, file_path: str):
     """Guarda un diccionario o lista en formato JSON de forma segura."""
     ensure_dir(os.path.dirname(file_path)) #asegurar q exista la carpeta
     

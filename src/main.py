@@ -29,7 +29,7 @@ async def main():
     sys_prompt = config_prompts["vlm"]["frame_analysis_2"]["system_instruction"]
 
    
-    ruta_video = os.path.join("data_ejs", "videos_test", video_name)
+    ruta_video = os.path.join("datasets", "videos_test", video_name)
     if not os.path.exists(ruta_video):
         print(f" ERROR: No encuentro el vídeo en: {ruta_video}")
         print("Revisa que el nombre sea correcto y esté en la carpeta data/uploads.")

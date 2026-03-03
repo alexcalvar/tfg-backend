@@ -1,17 +1,12 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
-class FrameAnalysisResult(BaseModel):
-    """Esquema estricto para la respuesta del análisis de cada fotograma."""
-       
-    visual_analysis: str = Field(
-        description="Describe paso a paso lo que ves en la imagen basándote estrictamente en los píxeles, prestando especial atención a si el objeto solicitado está presente."
-    )
-    
-    confidence: float = Field(
-        description="Nivel de confianza de 0.0 a 1.0 basado en el análisis visual previo."
-    )
-    
-    
-    match_found: bool = Field(
-        description="True si, basándote en visual_analysis, el objeto está claramente presente. False en caso contrario."
-    )
+# El modelo para el Dataset (Lo que dice la realidad)
+class GroundTruthFrame(BaseModel):
+    frame_id: str         
+    is_positive: bool     
+
+# El modelo para el Juez (La fusión para calcular métricas)
+class FrameEvaluation(BaseModel):
+    frame_id: str
+    ground_truth_detectado: bool  # Se saca del GroundTruthFrame
+    modelo_detectado: bool        # Se saca de tu JSON crudo de la IA

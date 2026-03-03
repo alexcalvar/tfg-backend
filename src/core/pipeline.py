@@ -9,7 +9,7 @@ from core.image_processor import VLMProcessor
 from utils.config_loader import ConfigLoader
 
 class VLMPipeline:
-    def __init__(self, model_instance, message_strategy,system_prompt,task_template, base_folder = "data_ejs", result_folder = "projects"):
+    def __init__(self, model_instance, message_strategy,system_prompt,task_template, base_folder = "datasets", result_folder = "projects"):
         
         self.config = ConfigLoader()
 
