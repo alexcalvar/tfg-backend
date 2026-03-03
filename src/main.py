@@ -65,9 +65,9 @@ async def main():
         return
 
     try:
-        vlm_model, strategy = ModelManager(vlm_provider, vlm_model_name).load_vlm()
+        vlm_model,provider, strategy = ModelManager(vlm_provider, vlm_model_name).load_vlm()
 
-        pipeline = VLMPipeline( vlm_model,strategy, sys_prompt, task_template) 
+        pipeline = VLMPipeline( vlm_model,provider, strategy, sys_prompt, task_template) 
         
         # Ejecutamos
         await pipeline.process_video(video_name, prompt)

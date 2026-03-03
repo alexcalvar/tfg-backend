@@ -33,7 +33,7 @@ class ModelManager:
                     temperature=0,
                     )
                 
-                return modelo, message_strategy
+                return modelo,self.vlm_provider_name, message_strategy
             
             case "ollama":
                 
@@ -46,7 +46,7 @@ class ModelManager:
                     format="json"
                 )
 
-                return modelo, message_strategy
+                return modelo,self.vlm_provider_name, message_strategy
             
             case "openroute":
                 print(f"Conectando con Open Route en remoto:  {self.vlm_name}")
@@ -65,7 +65,7 @@ class ModelManager:
                     api_key=api_key_or
                 )
 
-                return modelo, message_strategy
+                return modelo,self.vlm_provider_name, message_strategy
             
             case _:
                 raise ValueError(f" El proveedor VLM '{self.vlm_provider_name}' no está soportado en este Manager.")

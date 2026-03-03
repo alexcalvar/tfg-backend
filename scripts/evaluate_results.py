@@ -16,15 +16,15 @@ def main():
 
     # 1. Interfaz interactiva para el usuario
     project_folder = input("\nIntroduce el nombre exacto de la carpeta del proyecto (ej. project_1715000000): ").strip()
-    
+    ground_truth = "ground_truth.json"
     if not project_folder:
         print(" [ERROR] Debes introducir un nombre de proyecto válido.")
         return
 
     # 2. Construcción de rutas absolutas seguras
     DIRECTORIO_RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    PROJECT_DIR = os.path.join(DIRECTORIO_RAIZ, "projects", project_folder)
-    GROUND_TRUTH_FILE = os.path.join(DIRECTORIO_RAIZ, "datasets", "benchmarks", "ground_truth.json")
+    PROJECT_DIR = os.path.join(DIRECTORIO_RAIZ, "projects", project_folder,"results")
+    GROUND_TRUTH_FILE = os.path.join(DIRECTORIO_RAIZ, "projects", project_folder,"annotations", ground_truth)
     
     DATASET_FORMAT = "simple_json"
 

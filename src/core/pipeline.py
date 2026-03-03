@@ -1,7 +1,7 @@
 import os
-import json
 import time
 import asyncio
+import datetime
 
 from utils.file_utils import ensure_dir, save_json
 from utils.video_utils import VideoLoader
@@ -9,36 +9,58 @@ from core.image_processor import VLMProcessor
 from utils.config_loader import ConfigLoader
 
 class VLMPipeline:
-    def __init__(self, model_instance, message_strategy,system_prompt,task_template, base_folder = "datasets", result_folder = "projects"):
+    def __init__(self, model_instance,provider_name, message_strategy, system_prompt, task_template, base_folder="datasets", result_folder="projects"):
         
         self.config = ConfigLoader()
 
         self.vlm = model_instance
+        self.provider = provider_name
         self.message_strategy = message_strategy
+        
+        self.system_prompt = system_prompt
+        self.task_template = task_template
 
-        self.upload_dir = os.path.join(base_folder,"videos_test")
+        self.upload_dir = os.path.join(base_folder, "videos_test")
 
-        # Generamos un ID único basado en la hora actual 
         run_id = f"project_{int(time.time())}"
         
         self.base_run_dir = os.path.join(result_folder, run_id)
-        self.annotations_dir = os.path.join(self.base_run_dir,"annotations")
-        self.frames_dir = os.path.join(self.base_run_dir,"frames")
-        self.logs_dir = os.path.join(self.base_run_dir,"logs")
-        self.results_dir = os.path.join(self.base_run_dir,"results")
+        self.annotations_dir = os.path.join(self.base_run_dir, "annotations")
+        self.frames_dir = os.path.join(self.base_run_dir, "frames")
+        self.results_dir = os.path.join(self.base_run_dir, "results")
         
         ensure_dir(self.annotations_dir)
         ensure_dir(self.frames_dir)
-        ensure_dir(self.logs_dir)
         ensure_dir(self.results_dir)
         
         print(f" Nueva ejecución creada en: {self.base_run_dir}")
 
-        #guardar configuracion de la prueba 
-        ruta_save_config = os.path.join(self.base_run_dir, "execution_config.json")
-        self.config.export_config(ruta_save_config)
+        self.processor = VLMProcessor(self.vlm, self.message_strategy, self.system_prompt, self.task_template)
 
-        self.processor = VLMProcessor(self.vlm, self.message_strategy, system_prompt, task_template)
+    def _save_execution_config(self, video_filename, user_query):
+        """Genera el acta de nacimiento del proyecto con todos sus parámetros."""
+        config_data = {
+            "execution_metadata": {
+                "project_id": os.path.basename(self.base_run_dir), 
+                "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "status": "initialized"
+            },
+            "model_configuration": {
+                "model_object": str(self.vlm), 
+                "provider": self.provider, 
+                "system_prompt": self.system_prompt,
+                "task_template": self.task_template 
+            },
+            "inference_parameters": {
+                "user_query": user_query,
+                "frame_interval_seconds": self.config.get_video_float("frame_interval"), 
+                "video_source": video_filename
+            }
+        }
+        
+        config_path = os.path.join(self.base_run_dir, "execution_config.json")
+        save_json(config_data, config_path)
+
 
     async def _analizar_frames(self, cola_frames : asyncio.Queue, prompt_usuario, resultados : list):
 
@@ -121,6 +143,8 @@ class VLMPipeline:
         consumidor_task = asyncio.create_task(self._analizar_frames(cola_frames, prompt_usuario, resultados_acumulados))
 
         await productor_task
+
+        self._save_execution_config(file_name, prompt_usuario)
 
         await cola_frames.join() #esperar a q la cola se vacie  
 
