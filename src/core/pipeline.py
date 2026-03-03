@@ -3,12 +3,16 @@ import json
 import time
 import asyncio
 
+from utils.file_utils import ensure_dir, save_json
 from utils.video_utils import VideoLoader
 from core.image_processor import VLMProcessor
+from utils.config_loader import ConfigLoader
 
 class VLMPipeline:
     def __init__(self, model_instance, message_strategy,system_prompt,task_template, base_folder = "data_ejs", result_folder = "projects"):
         
+        self.config = ConfigLoader()
+
         self.vlm = model_instance
         self.message_strategy = message_strategy
 
@@ -23,18 +27,22 @@ class VLMPipeline:
         self.logs_dir = os.path.join(self.base_run_dir,"logs")
         self.results_dir = os.path.join(self.base_run_dir,"results")
         
-        os.makedirs(self.annotations_dir, exist_ok=True)
-        os.makedirs(self.frames_dir, exist_ok=True)
-        os.makedirs(self.logs_dir, exist_ok=True)
-        os.makedirs(self.results_dir, exist_ok=True)
+        ensure_dir(self.annotations_dir)
+        ensure_dir(self.frames_dir)
+        ensure_dir(self.logs_dir)
+        ensure_dir(self.results_dir)
         
         print(f" Nueva ejecución creada en: {self.base_run_dir}")
+
+        #guardar configuracion de la prueba 
+        ruta_save_config = os.path.join(self.base_run_dir, "execution_config.json")
+        self.config.export_config(ruta_save_config)
 
         self.processor = VLMProcessor(self.vlm, self.message_strategy, system_prompt, task_template)
 
     async def _analizar_frames(self, cola_frames : asyncio.Queue, prompt_usuario, resultados : list):
 
-        MAX_INTENTOS_COLA = 3
+        MAX_INTENTOS_COLA = self.config.get_video_int("max_intents_frame")
 
         while True:
         
@@ -59,7 +67,7 @@ class VLMPipeline:
                     print(f" Terminado: frame_{n_frame}")
                 
                 else:
-                        # enviar al final de la lista 
+                    # enviar al final de la lista 
                     actual_intent=max_intents-1
 
                     if max_intents == 0 :
@@ -75,8 +83,10 @@ class VLMPipeline:
                     
                     else:
                         reintentar_paquete = (frame_path, n_frame, actual_intent)
+                        print(f"El modelo no fue capaz de analizar el frame {n_frame}, intentos restantes : {actual_intent}")
                         await cola_frames.put(reintentar_paquete)
 
+            #al vaciarse la cola se lanza esta excepcin
             except asyncio.CancelledError:
                 break
 
@@ -99,7 +109,7 @@ class VLMPipeline:
 
         video_path = os.path.join(self.upload_dir,file_name)
         video_engine = VideoLoader(video_path, self.frames_dir)
-        interval_time = 0.5
+        interval_time = self.config.get_video_float("frame_interval")
 
         cola_frames = asyncio.Queue()
         
@@ -124,8 +134,7 @@ class VLMPipeline:
         results_file_name = "report.json"
         results_file_path = os.path.join(self.results_dir, results_file_name)
 
-        with open (results_file_path,"w",encoding="utf-8") as f:
-            json.dump(resultados_acumulados, f, indent=4, ensure_ascii=False)
+        save_json(resultados_acumulados, results_file_path)
 
         print(f" Informe guardado en: {self.results_dir}")
 

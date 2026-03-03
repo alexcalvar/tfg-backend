@@ -5,7 +5,6 @@ import asyncio
 
 from langchain_core.language_models.chat_models import BaseChatModel
 from core.adapters.message_builders import MessageBuilderStrategy
-from data.validators import FrameAnalysisResult
 
 class VLMProcessor:
     def __init__(self, vlm_model_instance : BaseChatModel, selected_message_strategy : MessageBuilderStrategy, system_prompt, task_template):

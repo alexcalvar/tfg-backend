@@ -3,11 +3,14 @@ import os
 import math
 import asyncio
 
+from utils.config_loader import ConfigLoader
+from utils.file_utils import ensure_dir
 class VideoLoader:
     def __init__(self, video_path, output_folder):
+        self.config = ConfigLoader()
         self.video_path = video_path
         self.output_folder = output_folder
-        os.makedirs(output_folder, exist_ok=True) 
+        ensure_dir(output_folder)
 
 
     async def extract_frames(self, interval, cola_frames : asyncio.Queue ):
@@ -34,7 +37,10 @@ class VideoLoader:
             #captura de fotogramas
             n_frame = 0
             count_frame = 0
-            max_intents = 3 # numero maximo de intentos q se realizan en caso de error en un frame
+            max_intents = self.config.get_video_int("max_intents_frame") # numero maximo de intentos q se realizan en caso de error en un frame
+
+            resize_width = self.config.get_video_int("resize_width")
+            resize_height = self.config.get_video_int("resize_height")
 
             while cap.isOpened():
 
@@ -46,7 +52,7 @@ class VideoLoader:
 
                 # optimizar los frames
                 # Redimensionamos a 640x360 para no saturar la RAM con Ollama
-                frame_redimensionado = cv2.resize(frame, (640, 360))
+                frame_redimensionado = cv2.resize(frame, (resize_width,resize_height ))
 
                 filename = f"frame_{count_frame}.jpg"
                 save_path = os.path.join(self.output_folder, filename)

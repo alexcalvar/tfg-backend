@@ -6,12 +6,7 @@ from dotenv import load_dotenv
 
 from core.pipeline import VLMPipeline 
 from core.model_manager import ModelManager
-
-def load_json_file ( ruta_archivo):
-    if not os.path.exists(ruta_archivo):
-        raise FileNotFoundError(f"no se encuentra el archivo {ruta_archivo}")
-    with open(ruta_archivo, "r", encoding="utf-8") as file:
-        return json.load(file)
+from utils.file_utils import load_json
 
 async def main():
 
@@ -24,8 +19,8 @@ async def main():
     rutas_modelos = "configs/models_config.json"
     rutas_prompts = "configs/prompts.json"
     
-    config_modelos = load_json_file(rutas_modelos)
-    config_prompts = load_json_file(rutas_prompts)
+    config_modelos = load_json(rutas_modelos)
+    config_prompts = load_json(rutas_prompts)
 
     video_name = "video_perro_prueba.mp4" 
     prompt = "Dime si ves un perro en la imagen"
