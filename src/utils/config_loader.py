@@ -27,6 +27,9 @@ class ConfigLoader:
     
     def get_path(self, key: str) -> str:
         return self.config.get("Paths", key)
+    
+    def get_sys_config(self, key: str) -> str:
+        return self.config.get("Configuracion", key)
 
     def get_video_float(self, key: str) -> float:
         return self.config.getfloat("Video", key)

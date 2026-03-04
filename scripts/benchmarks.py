@@ -27,9 +27,8 @@ async def main():
     RUTAS_MODELOS = os.path.join(DIRECTORIO_RAIZ, "configs", "models_config.json") # Ruta absoluta segura
     
     DATASET_FORMAT = "simple_json"
-    SYS_PROMPT = "Analiza el frame. Responde con un JSON estricto que contenga 'detectado' (booleano) y 'descripcion' (texto)."
     USER_PROMPT = "ves un perro en la imagen"
-    task_template = "Analiza la imagen y busca este elemento: '{user_query}'. Rellena los valores de este JSON:\n{\n  \"detectado\": true o false,\n  \"descripcion\": \"\", \n}\n\nInstrucciones de llenado:\nEn 'detectado' solo responderas true en caso de que hayas detectado el evento que se te pide buscar en la imagen \n- En 'descripcion' escribe una descripción del fotograma que se te pasa."
+    
 
     # --- 1. SELECCIÓN DE MODELO ---
     config_modelos = load_json(RUTAS_MODELOS)
@@ -63,7 +62,7 @@ async def main():
         print(" [2/3] Inicializando Pipeline y Dataset Loader...")
         # Instanciamos todo pero NO ejecutamos el proceso de video manualmente
         vlm_model, strategy = ModelManager(vlm_provider, vlm_model_name).load_vlm()
-        pipeline = VLMPipeline(vlm_model, strategy, SYS_PROMPT, task_template) 
+        pipeline = VLMPipeline(vlm_model, strategy) 
         dataset_loader = DatasetLoader()
     except Exception as e:
         print(f" [ERROR CRÍTICO] Fallo al inicializar el modelo o componentes: {e}") 

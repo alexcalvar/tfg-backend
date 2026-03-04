@@ -2,6 +2,8 @@ import os
 import json
 import base64
 
+from fastapi import UploadFile
+
 def ensure_dir(path: str):
     """Crea un directorio de forma segura si no existe."""
     if path:
@@ -29,3 +31,20 @@ def encode_image_base64(image_path: str) -> str:
     
     with open(image_path, "rb") as image_file:
         return base64.b64encode(image_file.read()).decode("utf-8")
+    
+async def save_upload_file(upload_file: UploadFile, destination_path: str) -> str:
+    """
+    Guarda un archivo subido vía red en el disco duro por bloques (chunks).
+    Evita la saturación de la memoria RAM con archivos pesados.
+    """
+    try:
+        with open(destination_path, "wb") as buffer:
+        # Leemos y escribimos en bloques de 1MB
+            while content := await upload_file.read(1024 * 1024): 
+                buffer.write(content)
+        return destination_path
+    except Exception as e:
+        raise IOError(f"Error al guardar el archivo {upload_file.filename}: {str(e)}")
+    finally:
+        # resetear el puntero del archivo por si otra función necesita leerlo después
+        await upload_file.seek(0)
