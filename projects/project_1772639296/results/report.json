@@ -1,0 +1,32 @@
+[
+    {
+        "detectado": true,
+        "descripcion": "En el fotograma se observa un perro de pelaje marrón y negro caminando por un sendero forestal cubierto de hojas secas. El entorno es un bosque con árboles deshojados, vegetación verde en los bordes y un tronco caído a la izquierda. La escena sugiere una temporada otoñal o invernal, con luz natural que ilumina el área.",
+        "archivo": "frame_0.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "En el fotograma se observa un perro de pelaje marrón y negro caminando por un sendero forestal cubierto de hojas secas. El entorno es un bosque con árboles altos, ramas desnudas en algunos puntos, y vegetación baja a ambos lados del camino. El perro está ubicado en el centro de la imagen, mirando hacia la cámara, con un fondo de árboles que sugieren una estación otoñal o invernal.",
+        "archivo": "frame_1.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "En un sendero forestal cubierto de hojas secas, un perro de pelaje marrón corre hacia la cámara, sosteniendo una rama en su boca. El entorno muestra árboles deshojados, vegetación baja y rocas cubiertas de musgo a la izquierda.",
+        "archivo": "frame_2.jpg"
+    },
+    {
+        "detectado": false,
+        "descripcion": "Error: El modelo no pudo generar un JSON válido tras 3 reintentos en cola.",
+        "archivo": "frame_3.jpg"
+    },
+    {
+        "detectado": false,
+        "descripcion": "Error: El modelo no pudo generar un JSON válido tras 3 reintentos en cola.",
+        "archivo": "frame_4.jpg"
+    },
+    {
+        "detectado": false,
+        "descripcion": "La imagen muestra un paisaje forestal con suelo cubierto de hojas secas, un tronco caído con raíces expuestas y vegetación baja. No hay presencia de perros ni otros animales en el fotograma.",
+        "archivo": "frame_5.jpg"
+    }
+]

@@ -1,0 +1,13 @@
+{
+    "Paths": {
+        "base_folder": "data",
+        "upload_folder": "videos_test",
+        "result_folder": "projects"
+    },
+    "Video": {
+        "frame_interval": "0.2",
+        "max_intents_frame": "3",
+        "resize_width": "640",
+        "resize_height": "360"
+    }
+}

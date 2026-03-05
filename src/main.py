@@ -1,17 +1,11 @@
 import os
-import json
 import asyncio
 
 from dotenv import load_dotenv
 
 from core.pipeline import VLMPipeline 
 from core.model_manager import ModelManager
-
-def load_json_file ( ruta_archivo):
-    if not os.path.exists(ruta_archivo):
-        raise FileNotFoundError(f"no se encuentra el archivo {ruta_archivo}")
-    with open(ruta_archivo, "r", encoding="utf-8") as file:
-        return json.load(file)
+from utils.file_utils import load_json
 
 async def main():
 
@@ -22,22 +16,16 @@ async def main():
     
     #  Cargar configuraciones en memoria 
     rutas_modelos = "configs/models_config.json"
-    rutas_prompts = "configs/prompts.json"
-    
-    config_modelos = load_json_file(rutas_modelos)
-    config_prompts = load_json_file(rutas_prompts)
+    config_modelos = load_json(rutas_modelos)
 
+    #paramentros q se reciben en la peticion
     video_name = "video_perro_prueba.mp4" 
-    prompt = "Dime si ves un perro en la imagen"
+    user_prompt = "Dime si ves un perro en la imagen"
 
-    task_template = config_prompts["vlm"]["frame_analysis_2"]["task_template"]
-    sys_prompt = config_prompts["vlm"]["frame_analysis_2"]["system_instruction"]
-
-   
-    ruta_video = os.path.join("data_ejs", "videos_test", video_name)
+    ruta_video = os.path.join("datasets", "videos_test", video_name)
     if not os.path.exists(ruta_video):
         print(f" ERROR: No encuentro el vídeo en: {ruta_video}")
-        print("Revisa que el nombre sea correcto y esté en la carpeta data/uploads.")
+        print("Revisa que el nombre sea correcto y esté en la carpeta datasets/video_test.")
         return
 
     print(" Arrancando sistema ...")
@@ -70,12 +58,12 @@ async def main():
         return
 
     try:
-        vlm_model, strategy = ModelManager(vlm_provider, vlm_model_name).load_vlm()
+        vlm_model,provider, strategy = ModelManager(vlm_provider, vlm_model_name).load_vlm()
 
-        pipeline = VLMPipeline( vlm_model,strategy, sys_prompt, task_template) 
+        pipeline = VLMPipeline(vlm_model,provider, strategy) 
         
         # Ejecutamos
-        await pipeline.process_video(video_name, prompt)
+        await pipeline.process_video(ruta_video, user_prompt)
     
     except Exception as e:
         print(f" Ocurrió un error inesperado: {e}")

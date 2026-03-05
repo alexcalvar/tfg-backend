@@ -3,11 +3,14 @@ import os
 import math
 import asyncio
 
+from utils.config_loader import ConfigLoader
+from utils.file_utils import ensure_dir
 class VideoLoader:
     def __init__(self, video_path, output_folder):
+        self.config = ConfigLoader()
         self.video_path = video_path
         self.output_folder = output_folder
-        os.makedirs(output_folder, exist_ok=True) 
+        ensure_dir(output_folder)
 
 
     async def extract_frames(self, interval, cola_frames : asyncio.Queue ):
@@ -34,7 +37,10 @@ class VideoLoader:
             #captura de fotogramas
             n_frame = 0
             count_frame = 0
-            max_intents = 3 # numero maximo de intentos q se realizan en caso de error en un frame
+            max_intents = self.config.get_video_int("max_intents_frame") # numero maximo de intentos q se realizan en caso de error en un frame
+
+            resize_width = self.config.get_video_int("resize_width")
+            resize_height = self.config.get_video_int("resize_height")
 
             while cap.isOpened():
 
@@ -46,7 +52,7 @@ class VideoLoader:
 
                 # optimizar los frames
                 # Redimensionamos a 640x360 para no saturar la RAM con Ollama
-                frame_redimensionado = cv2.resize(frame, (640, 360))
+                frame_redimensionado = cv2.resize(frame, (resize_width,resize_height ))
 
                 filename = f"frame_{count_frame}.jpg"
                 save_path = os.path.join(self.output_folder, filename)
@@ -69,23 +75,26 @@ class VideoLoader:
                 # esto permite que el consumidor envíe la petición a la api del modelo
                 # sin esperar a que acabe el vídeo entero.
                 await asyncio.sleep(0)  
-        
+
         cap.release()
+        
+
+    def get_expected_frame_count(self, interval: float) -> int:
+        """Calcula matemáticamente cuántos frames se extraerán antes de iniciar el proceso."""
+        cap = cv2.VideoCapture(self.video_path)
+        if not cap.isOpened():
+            return 0
+            
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        total_video_frames = cap.get(cv2.CAP_PROP_FRAME_COUNT)
+        cap.release() # Cerramos inmediatamente, solo queríamos leer los metadatos
+        
+        if fps > 0 and total_video_frames > 0:
+            step = math.ceil(fps * interval)
+            if step > 0:
+                # Si el total es 95 y saltamos de 30 en 30, ceil(95/30) = 4 frames
+                return math.ceil(total_video_frames / step) 
+        return 0
 
 
 
-
-
-# --- BLOQUE DE PRUEBA ---
-if __name__ == "__main__":
-    
-    video = "data/uploads/video_prueba_coches.mp4"
-    carpeta_salida = "data/frames"
-
-    if os.path.exists(video):
-        loader = VideoLoader(video, carpeta_salida)
-        # Extraer 1 por segundo
-        loader.extract_frames(interval=1) 
-    else:
-        print(f" No encuentro el vídeo en: {video}")
-        print("Crea la carpeta data/uploads y pon un vídeo ahí.")

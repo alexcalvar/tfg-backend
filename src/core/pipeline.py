@@ -1,40 +1,163 @@
 import os
-import json
 import time
 import asyncio
+import datetime
+import shutil # Para copiar el vídeo
 
+from utils.file_utils import ensure_dir, save_json, load_json
+from utils.project_status import ProjectStatus
 from utils.video_utils import VideoLoader
 from core.image_processor import VLMProcessor
+from utils.config_loader import ConfigLoader
 
 class VLMPipeline:
-    def __init__(self, model_instance, message_strategy,system_prompt,task_template, base_folder = "data_ejs", result_folder = "projects"):
+    def __init__(self, model_instance, provider_name, message_strategy):
         
+        self.config = ConfigLoader()
         self.vlm = model_instance
+        self.provider = provider_name
         self.message_strategy = message_strategy
+        
+        #  carga de prompts encapsulada
+        self._load_prompts()
 
-        self.upload_dir = os.path.join(base_folder,"videos_test")
+        #  estructura de carpetas aislada
+        self._setup_project_directories()
 
-        # Generamos un ID único basado en la hora actual 
+        # inicialización del procesador
+        self.processor = VLMProcessor(self.vlm, self.message_strategy, self.system_prompt, self.task_template)
+
+
+
+    def _load_prompts(self):
+        """Aísla la lógica de lectura del archivo de prompts."""
+        prompts_path = os.path.join(self.config.get_path("config_folder"), "prompts.json")
+        config_prompts = load_json(prompts_path)
+
+        lista_prompts = self.config.get_sys_config("selected_vlm_prompts_list")
+        sys_prompt_key = self.config.get_sys_config("selected_sys_prompt")
+        
+        self.system_prompt = config_prompts[lista_prompts][sys_prompt_key]["system_instruction"]
+        self.task_template = config_prompts[lista_prompts][sys_prompt_key]["task_template"]
+
+
+
+    def _setup_project_directories(self):
+        """Crea el entorno de carpetas encapsulado para este proyecto."""
+        
+        projects_folder = self.config.get_path("projects_folder")
         run_id = f"project_{int(time.time())}"
+        self.base_run_dir = os.path.join(projects_folder, run_id)
+
+        ensure_dir(self.base_run_dir)
         
-        self.base_run_dir = os.path.join(result_folder, run_id)
-        self.annotations_dir = os.path.join(self.base_run_dir,"annotations")
-        self.frames_dir = os.path.join(self.base_run_dir,"frames")
-        self.logs_dir = os.path.join(self.base_run_dir,"logs")
-        self.results_dir = os.path.join(self.base_run_dir,"results")
+        self.video_dir = os.path.join(self.base_run_dir, "video")
+        self.annotations_dir = os.path.join(self.base_run_dir, "annotations")
+        self.frames_dir = os.path.join(self.base_run_dir, "frames")
+        self.results_dir = os.path.join(self.base_run_dir, "results")
         
-        os.makedirs(self.annotations_dir, exist_ok=True)
-        os.makedirs(self.frames_dir, exist_ok=True)
-        os.makedirs(self.logs_dir, exist_ok=True)
-        os.makedirs(self.results_dir, exist_ok=True)
+        ensure_dir(self.annotations_dir)
+        ensure_dir(self.video_dir)
+        ensure_dir(self.frames_dir)
+        ensure_dir(self.results_dir)
         
         print(f" Nueva ejecución creada en: {self.base_run_dir}")
 
-        self.processor = VLMProcessor(self.vlm, self.message_strategy, system_prompt, task_template)
 
-    async def _analizar_frames(self, cola_frames : asyncio.Queue, prompt_usuario, resultados : list):
 
-        MAX_INTENTOS_COLA = 3
+    async def process_video(self, source_video_path, prompt_usuario):
+        """
+        Punto de entrada principal
+        Recibe la ruta absoluta del vídeo
+        """
+
+        # copiamos el vídeo original a la carpeta interna del proyecto
+        file_name, internal_video_path = self._save_video(source_video_path)
+        
+        # el motor de vídeo ahora lee desde nuestra copia interna
+        video_engine = VideoLoader(internal_video_path, self.frames_dir)
+        interval_time = self.config.get_video_float("frame_interval")
+
+        # cacular total de frames a procesar
+        total_frames = video_engine.get_expected_frame_count(interval_time)
+
+        self._update_status(ProjectStatus.EXTRACTING, "Iniciando proceso de extracción de frames", 0, total_frames)
+
+        cola_frames = asyncio.Queue()
+        
+        print("Extracción de frames ...")
+        productor_task = asyncio.create_task(video_engine.extract_frames(interval_time, cola_frames))
+
+        resultados_acumulados = []
+        consumidor_task = asyncio.create_task(self._analizar_frames(cola_frames,total_frames, prompt_usuario, resultados_acumulados))
+
+        await productor_task
+        
+        # Actualizamos la firma para guardar el nombre del archivo
+        self._save_execution_config(file_name, prompt_usuario, total_frames)
+
+        await cola_frames.join() 
+
+        consumidor_task.cancel()
+
+        self._update_status(ProjectStatus.COMPLETED, "Análisis finalizado con éxito.", total_frames, total_frames)
+
+        try:
+            resultados_acumulados.sort(key=lambda x: int(x["archivo"].split('_')[1].split('.')[0]))
+        except Exception:
+            pass 
+       
+        results_file_path = os.path.join(self.results_dir, "report.json")
+        save_json(resultados_acumulados, results_file_path)
+        print(f" Informe guardado en: {self.results_dir}")
+
+        self._update_status(ProjectStatus.COMPLETED, "Análisis finalizado con éxito.", total_frames, total_frames)
+
+
+
+    def _save_video(self, source_video_path):
+        """ Almacena el video en la carpeta correspondiente si no está ya allí."""
+        file_name = os.path.basename(source_video_path)
+        internal_video_path = os.path.join(self.video_dir, file_name)
+        
+        # copiamos si la ruta de origen no es exactamente la misma que el destino
+        if os.path.abspath(source_video_path) != os.path.abspath(internal_video_path):
+            shutil.copy2(source_video_path, internal_video_path)
+
+        return file_name, internal_video_path
+
+
+
+    def _save_execution_config(self, video_filename, user_query, total_frames):
+        """Genera el archivo que almacena la información del proyecto con todos sus parámetros."""
+        config_data = {
+            "execution_metadata": {
+                "project_id": os.path.basename(self.base_run_dir), 
+                "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "status": "initialized"
+            },
+            "model_configuration": {
+                "model_object": str(self.vlm), 
+                "provider": self.provider, 
+                "system_prompt": self.system_prompt,
+                "task_template": self.task_template 
+            },
+            "inference_parameters": {
+                "user_query": user_query,
+                "frame_interval_seconds": self.config.get_video_float("frame_interval"), 
+                "total_frames" : total_frames,
+                "video_source": video_filename
+            }
+        }
+        
+        config_path = os.path.join(self.base_run_dir, "execution_config.json")
+        save_json(config_data, config_path)
+
+
+
+    async def _analizar_frames(self, cola_frames : asyncio.Queue, total_frames : int , prompt_usuario, resultados : list):
+
+        MAX_INTENTOS_COLA = self.config.get_video_int("max_intents_frame")
 
         while True:
         
@@ -44,13 +167,15 @@ class VLMPipeline:
                 cola_frames.task_done()
                 break  
 
-            # Desempaquetar 
+            # desempaquetar 
             frame_path, n_frame, max_intents = paquete
 
             try:
                 respuesta_dict = await asyncio.to_thread(
                     self.processor.analyze_frame, prompt_usuario, frame_path
                 )
+
+                self._update_status(ProjectStatus.ANALYZING, "Analizando los frames extraídos del video", n_frame, total_frames)
 
                 if "detectado" in respuesta_dict and "descripcion" in respuesta_dict:
                     # json correcto, se guarda 
@@ -59,7 +184,7 @@ class VLMPipeline:
                     print(f" Terminado: frame_{n_frame}")
                 
                 else:
-                        # enviar al final de la lista 
+                    # enviar al final de la lista 
                     actual_intent=max_intents-1
 
                     if max_intents == 0 :
@@ -75,8 +200,10 @@ class VLMPipeline:
                     
                     else:
                         reintentar_paquete = (frame_path, n_frame, actual_intent)
+                        print(f"El modelo no fue capaz de analizar el frame {n_frame}, intentos restantes : {actual_intent}")
                         await cola_frames.put(reintentar_paquete)
 
+            #al vaciarse la cola se lanza esta excepcin
             except asyncio.CancelledError:
                 break
 
@@ -95,38 +222,18 @@ class VLMPipeline:
             
 
 
-    async def process_video(self, file_name, prompt_usuario):
-
-        video_path = os.path.join(self.upload_dir,file_name)
-        video_engine = VideoLoader(video_path, self.frames_dir)
-        interval_time = 0.5
-
-        cola_frames = asyncio.Queue()
+    def _update_status(self, state: ProjectStatus, message: str, current_frame: int = 0, total_frames: int = 0):
+        """Escribe el estado actual del proceso en el disco en tiempo real."""
+        status_data = {
+            # Usamos state.value para obtener el texto real (ej. "completed") y poder guardarlo en el JSON
+            "state": state.value, 
+            "message": message,
+            "progress": {
+                "current_frame": current_frame,
+                "total_frames": total_frames
+            },
+            "last_updated": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
         
-        print("Extracción de frames ...")
-        productor_task = asyncio.create_task(video_engine.extract_frames(interval_time, cola_frames))
-
-        resultados_acumulados = []
-
-        consumidor_task = asyncio.create_task(self._analizar_frames(cola_frames, prompt_usuario, resultados_acumulados))
-
-        await productor_task
-
-        await cola_frames.join() #esperar a q la cola se vacie  
-
-        consumidor_task.cancel()
-
-        try:
-            resultados_acumulados.sort(key=lambda x: int(x["archivo"].split('_')[1].split('.')[0]))
-        except Exception:
-            pass # si falla al reordenar devolver la lista tal cual 
-       
-        results_file_name = "report.json"
-        results_file_path = os.path.join(self.results_dir, results_file_name)
-
-        with open (results_file_path,"w",encoding="utf-8") as f:
-            json.dump(resultados_acumulados, f, indent=4, ensure_ascii=False)
-
-        print(f" Informe guardado en: {self.results_dir}")
-
-
+        status_path = os.path.join(self.base_run_dir, "status.json")
+        save_json(status_data, status_path)
