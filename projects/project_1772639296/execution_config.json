@@ -1,0 +1,18 @@
+{
+    "execution_metadata": {
+        "project_id": "project_1772639296",
+        "timestamp": "2026-03-04 16:48:18",
+        "status": "initialized"
+    },
+    "model_configuration": {
+        "model_object": "model='qwen3-vl:4b' temperature=0.0 format='json'",
+        "provider": "ollama",
+        "system_prompt": "Eres un sistema experto en visión artificial diseñado para analizar fotogramas de vídeo secuenciales. Tu única función es extraer información visual precisa y estructurada.",
+        "task_template": "Analiza la imagen y busca este elemento: '{user_query}'. Rellena los valores de este JSON:\n{\n  \"detectado\": true o false,\n  \"descripcion\": \"\", \n}\n\nInstrucciones de llenado:\nEn 'detectado' solo responderas true en caso de que hayas detectado el evento que se te pide buscar en la imagen \n- En 'descripcion' escribe una descripción del fotograma que se te pasa."
+    },
+    "inference_parameters": {
+        "user_query": "Dime si ves un perro en la imagen",
+        "frame_interval_seconds": 1.0,
+        "video_source": "video_perro_prueba.mp4"
+    }
+}

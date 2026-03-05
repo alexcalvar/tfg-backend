@@ -16,22 +16,16 @@ async def main():
     
     #  Cargar configuraciones en memoria 
     rutas_modelos = "configs/models_config.json"
-    rutas_prompts = "configs/prompts.json"
-    
     config_modelos = load_json(rutas_modelos)
-    config_prompts = load_json(rutas_prompts)
 
+    #paramentros q se reciben en la peticion
     video_name = "video_perro_prueba.mp4" 
-    prompt = "Dime si ves un perro en la imagen"
+    user_prompt = "Dime si ves un perro en la imagen"
 
-    task_template = config_prompts["vlm"]["frame_analysis_2"]["task_template"]
-    sys_prompt = config_prompts["vlm"]["frame_analysis_2"]["system_instruction"]
-
-   
     ruta_video = os.path.join("datasets", "videos_test", video_name)
     if not os.path.exists(ruta_video):
         print(f" ERROR: No encuentro el vídeo en: {ruta_video}")
-        print("Revisa que el nombre sea correcto y esté en la carpeta data/uploads.")
+        print("Revisa que el nombre sea correcto y esté en la carpeta datasets/video_test.")
         return
 
     print(" Arrancando sistema ...")
@@ -66,10 +60,10 @@ async def main():
     try:
         vlm_model,provider, strategy = ModelManager(vlm_provider, vlm_model_name).load_vlm()
 
-        pipeline = VLMPipeline( vlm_model,provider, strategy) 
+        pipeline = VLMPipeline(vlm_model,provider, strategy) 
         
         # Ejecutamos
-        await pipeline.process_video(video_name, prompt)
+        await pipeline.process_video(ruta_video, user_prompt)
     
     except Exception as e:
         print(f" Ocurrió un error inesperado: {e}")

@@ -13,12 +13,28 @@ class VLMProcessor:
         self.sys_prompt = system_prompt
         self.task_template = task_template 
 
+
+    def  analyze_frame( self,user_prompt, image_path):
+        image_b64 = self._encode_image( image_path)
+
+        prompt_formateado = self.task_template.replace("{user_query}", user_prompt)
+
+        # generar el msg de la forma q espera el modelo
+        final_prompt = self.message_strategy.build_messages(self.sys_prompt, prompt_formateado, image_b64)
+    
+        response = self.vlm.invoke(final_prompt)
+
+        clear_response = self._clean_json_string(response.content)
+
+        return json.loads(clear_response)
+        
+
     def _encode_image(self, image_path):
         with open(image_path, "rb") as file:
             return base64.b64encode(file.read()).decode("utf-8")
         
     def _clean_json_string(self, text: str) :   
-        """Limpia el output del LLM para asegurar que es parseable por json.loads"""
+        """Limpia el output del modelo para asegurar que es parseable por json.loads"""
         text = text.strip()
         # Si el modelo responde con bloques de markdown, se limpian
         if text.startswith("```json"):
@@ -36,19 +52,7 @@ class VLMProcessor:
         return text
 
 
-
-    def  analyze_frame( self,user_prompt, image_path):
-        image_b64 = self._encode_image( image_path)
-
-        prompt_formateado = self.task_template.replace("{user_query}", user_prompt)
-
-        # generar el msg de la forma q espera el modelo
-        final_prompt = self.message_strategy.build_messages(self.sys_prompt, prompt_formateado, image_b64)
     
-        response = self.vlm.invoke(final_prompt)
-        clear_response = self._clean_json_string(response.content)
-        return json.loads(clear_response)
-        
 
 # --- BLOQUE DE PRUEBA ---
 if __name__ == "__main__": 

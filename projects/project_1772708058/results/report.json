@@ -1,0 +1,32 @@
+[
+    {
+        "detectado": true,
+        "descripcion": "En el fotograma se observa un perro de pelaje marrón caminando por un sendero forestal cubierto de hojas secas, rodeado de árboles y vegetación en un entorno natural.",
+        "archivo": "frame_0.jpg"
+    },
+    {
+        "detectado": false,
+        "descripcion": "Error de conexión o sistema: [Errno 2] No such file or directory: 'projects\\\\project_1772708058\\\\frames\\\\frame_1.jpg'",
+        "archivo": "frame_1.jpg"
+    },
+    {
+        "detectado": false,
+        "descripcion": "Error de conexión o sistema: [Errno 2] No such file or directory: 'projects\\\\project_1772708058\\\\frames\\\\frame_2.jpg'",
+        "archivo": "frame_2.jpg"
+    },
+    {
+        "detectado": false,
+        "descripcion": "Error de conexión o sistema: [Errno 2] No such file or directory: 'projects\\\\project_1772708058\\\\frames\\\\frame_3.jpg'",
+        "archivo": "frame_3.jpg"
+    },
+    {
+        "detectado": false,
+        "descripcion": "Error de conexión o sistema: [Errno 2] No such file or directory: 'projects\\\\project_1772708058\\\\frames\\\\frame_4.jpg'",
+        "archivo": "frame_4.jpg"
+    },
+    {
+        "detectado": false,
+        "descripcion": "Error de conexión o sistema: [Errno 2] No such file or directory: 'projects\\\\project_1772708058\\\\frames\\\\frame_5.jpg'",
+        "archivo": "frame_5.jpg"
+    }
+]

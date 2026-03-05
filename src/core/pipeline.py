@@ -5,6 +5,7 @@ import datetime
 import shutil # Para copiar el vídeo
 
 from utils.file_utils import ensure_dir, save_json, load_json
+from utils.project_status import ProjectStatus
 from utils.video_utils import VideoLoader
 from core.image_processor import VLMProcessor
 from utils.config_loader import ConfigLoader
@@ -27,6 +28,7 @@ class VLMPipeline:
         self.processor = VLMProcessor(self.vlm, self.message_strategy, self.system_prompt, self.task_template)
 
 
+
     def _load_prompts(self):
         """Aísla la lógica de lectura del archivo de prompts."""
         prompts_path = os.path.join(self.config.get_path("config_folder"), "prompts.json")
@@ -39,14 +41,16 @@ class VLMPipeline:
         self.task_template = config_prompts[lista_prompts][sys_prompt_key]["task_template"]
 
 
+
     def _setup_project_directories(self):
         """Crea el entorno de carpetas encapsulado para este proyecto."""
         
-        result_folder = self.config.get_path("result_folder")
+        projects_folder = self.config.get_path("projects_folder")
         run_id = f"project_{int(time.time())}"
-        self.base_run_dir = os.path.join(result_folder, run_id)
+        self.base_run_dir = os.path.join(projects_folder, run_id)
+
+        ensure_dir(self.base_run_dir)
         
-        # 
         self.video_dir = os.path.join(self.base_run_dir, "video")
         self.annotations_dir = os.path.join(self.base_run_dir, "annotations")
         self.frames_dir = os.path.join(self.base_run_dir, "frames")
@@ -60,11 +64,13 @@ class VLMPipeline:
         print(f" Nueva ejecución creada en: {self.base_run_dir}")
 
 
+
     async def process_video(self, source_video_path, prompt_usuario):
         """
         Punto de entrada principal
         Recibe la ruta absoluta del vídeo
         """
+
         # copiamos el vídeo original a la carpeta interna del proyecto
         file_name, internal_video_path = self._save_video(source_video_path)
         
@@ -72,21 +78,29 @@ class VLMPipeline:
         video_engine = VideoLoader(internal_video_path, self.frames_dir)
         interval_time = self.config.get_video_float("frame_interval")
 
+        # cacular total de frames a procesar
+        total_frames = video_engine.get_expected_frame_count(interval_time)
+
+        self._update_status(ProjectStatus.EXTRACTING, "Iniciando proceso de extracción de frames", 0, total_frames)
+
         cola_frames = asyncio.Queue()
         
         print("Extracción de frames ...")
         productor_task = asyncio.create_task(video_engine.extract_frames(interval_time, cola_frames))
 
         resultados_acumulados = []
-        consumidor_task = asyncio.create_task(self._analizar_frames(cola_frames, prompt_usuario, resultados_acumulados))
+        consumidor_task = asyncio.create_task(self._analizar_frames(cola_frames,total_frames, prompt_usuario, resultados_acumulados))
 
         await productor_task
         
         # Actualizamos la firma para guardar el nombre del archivo
-        self._save_execution_config(file_name, prompt_usuario)
+        self._save_execution_config(file_name, prompt_usuario, total_frames)
 
         await cola_frames.join() 
+
         consumidor_task.cancel()
+
+        self._update_status(ProjectStatus.COMPLETED, "Análisis finalizado con éxito.", total_frames, total_frames)
 
         try:
             resultados_acumulados.sort(key=lambda x: int(x["archivo"].split('_')[1].split('.')[0]))
@@ -95,8 +109,10 @@ class VLMPipeline:
        
         results_file_path = os.path.join(self.results_dir, "report.json")
         save_json(resultados_acumulados, results_file_path)
-
         print(f" Informe guardado en: {self.results_dir}")
+
+        self._update_status(ProjectStatus.COMPLETED, "Análisis finalizado con éxito.", total_frames, total_frames)
+
 
 
     def _save_video(self, source_video_path):
@@ -110,7 +126,9 @@ class VLMPipeline:
 
         return file_name, internal_video_path
 
-    def _save_execution_config(self, video_filename, user_query):
+
+
+    def _save_execution_config(self, video_filename, user_query, total_frames):
         """Genera el archivo que almacena la información del proyecto con todos sus parámetros."""
         config_data = {
             "execution_metadata": {
@@ -127,6 +145,7 @@ class VLMPipeline:
             "inference_parameters": {
                 "user_query": user_query,
                 "frame_interval_seconds": self.config.get_video_float("frame_interval"), 
+                "total_frames" : total_frames,
                 "video_source": video_filename
             }
         }
@@ -135,7 +154,8 @@ class VLMPipeline:
         save_json(config_data, config_path)
 
 
-    async def _analizar_frames(self, cola_frames : asyncio.Queue, prompt_usuario, resultados : list):
+
+    async def _analizar_frames(self, cola_frames : asyncio.Queue, total_frames : int , prompt_usuario, resultados : list):
 
         MAX_INTENTOS_COLA = self.config.get_video_int("max_intents_frame")
 
@@ -154,6 +174,8 @@ class VLMPipeline:
                 respuesta_dict = await asyncio.to_thread(
                     self.processor.analyze_frame, prompt_usuario, frame_path
                 )
+
+                self._update_status(ProjectStatus.ANALYZING, "Analizando los frames extraídos del video", n_frame, total_frames)
 
                 if "detectado" in respuesta_dict and "descripcion" in respuesta_dict:
                     # json correcto, se guarda 
@@ -198,3 +220,20 @@ class VLMPipeline:
                 #  porque el put() cuenta como un elemento nuevo
                 cola_frames.task_done()
             
+
+
+    def _update_status(self, state: ProjectStatus, message: str, current_frame: int = 0, total_frames: int = 0):
+        """Escribe el estado actual del proceso en el disco en tiempo real."""
+        status_data = {
+            # Usamos state.value para obtener el texto real (ej. "completed") y poder guardarlo en el JSON
+            "state": state.value, 
+            "message": message,
+            "progress": {
+                "current_frame": current_frame,
+                "total_frames": total_frames
+            },
+            "last_updated": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
+        
+        status_path = os.path.join(self.base_run_dir, "status.json")
+        save_json(status_data, status_path)

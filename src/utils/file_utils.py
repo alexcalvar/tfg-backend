@@ -34,12 +34,12 @@ def encode_image_base64(image_path: str) -> str:
     
 async def save_upload_file(upload_file: UploadFile, destination_path: str) -> str:
     """
-    Guarda un archivo subido vía red en el disco duro por bloques (chunks).
+    Guarda un archivo subido vía red en el disco duro por bloques .
     Evita la saturación de la memoria RAM con archivos pesados.
     """
     try:
         with open(destination_path, "wb") as buffer:
-        # Leemos y escribimos en bloques de 1MB
+        # Leemos y escribimos en bloques 
             while content := await upload_file.read(1024 * 1024): 
                 buffer.write(content)
         return destination_path

@@ -75,23 +75,26 @@ class VideoLoader:
                 # esto permite que el consumidor envíe la petición a la api del modelo
                 # sin esperar a que acabe el vídeo entero.
                 await asyncio.sleep(0)  
-        
+
         cap.release()
+        
+
+    def get_expected_frame_count(self, interval: float) -> int:
+        """Calcula matemáticamente cuántos frames se extraerán antes de iniciar el proceso."""
+        cap = cv2.VideoCapture(self.video_path)
+        if not cap.isOpened():
+            return 0
+            
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        total_video_frames = cap.get(cv2.CAP_PROP_FRAME_COUNT)
+        cap.release() # Cerramos inmediatamente, solo queríamos leer los metadatos
+        
+        if fps > 0 and total_video_frames > 0:
+            step = math.ceil(fps * interval)
+            if step > 0:
+                # Si el total es 95 y saltamos de 30 en 30, ceil(95/30) = 4 frames
+                return math.ceil(total_video_frames / step) 
+        return 0
 
 
 
-
-
-# --- BLOQUE DE PRUEBA ---
-if __name__ == "__main__":
-    
-    video = "data/uploads/video_prueba_coches.mp4"
-    carpeta_salida = "data/frames"
-
-    if os.path.exists(video):
-        loader = VideoLoader(video, carpeta_salida)
-        # Extraer 1 por segundo
-        loader.extract_frames(interval=1) 
-    else:
-        print(f" No encuentro el vídeo en: {video}")
-        print("Crea la carpeta data/uploads y pon un vídeo ahí.")
