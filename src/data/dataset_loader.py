@@ -1,12 +1,12 @@
-from data.dataset_adapters import BaseDatasetAdapter, SimpleJSONAdapter
-from data.validators import GroundTruthFrame
+from src.data.dataset_adapters import BaseDatasetAdapter, SimpleJSONAdapter
+from src.data.validators import GroundTruthFrame
 
 class DatasetLoader:
     def __init__(self):
         # El "Registro" de traductores disponibles
         self._adapters: dict[str, BaseDatasetAdapter] = {
             "simple_json": SimpleJSONAdapter(),
-            # "yolo_txt": YOLOAdapter(),  <-- Si mañana haces otro, solo lo añades aquí
+            # "yolo_txt": YOLOAdapter(),  
         }
 
     def load_ground_truth(self, file_path: str, format_type: str) -> dict[str, GroundTruthFrame]:

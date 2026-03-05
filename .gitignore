@@ -25,7 +25,7 @@ Thumbs.db
 # Ignoramos los videos y fotos, pero queremos mantener la estructura de carpetas
 datasets/
 projects/**/frames/
-projects/**/logs/
+projects/**/video/
 projects/**/annotations/
 # Si quieres ignorar los resultados json locales también:
 # projects/**/results/

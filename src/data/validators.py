@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-# El modelo para el Dataset (Lo que dice la realidad)
+# El modelo para el Dataset 
 class GroundTruthFrame(BaseModel):
     frame_id: str         
     is_positive: bool     

@@ -1,13 +1,8 @@
 import os
 import sys
 
-# ---  Conectar la carpeta scripts con la carpeta src ---
-DIRECTORIO_RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CARPETA_SRC = os.path.join(DIRECTORIO_RAIZ, "src")
-sys.path.append(CARPETA_SRC)
-
-from data.dataset_loader import DatasetLoader
-from evaluation.benchmark_runner import BenchmarkRunner
+from src.data.dataset_loader import DatasetLoader
+from src.evaluation.benchmark_runner import BenchmarkRunner
 
 
 

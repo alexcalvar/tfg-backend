@@ -1,12 +1,12 @@
 import os
-from data.dataset_loader import DatasetLoader
-from data.validators import FrameEvaluation
-from evaluation.metrics_calculator import BinaryMetricsCalculator
-from utils.file_utils import load_json, save_json
-from evaluation.reporters import MetricsReporter
+from src.data.dataset_loader import DatasetLoader
+from src.data.validators import FrameEvaluation
+from src.evaluation.metrics_calculator import BinaryMetricsCalculator
+from src.utils.file_utils import load_json, save_json
+from src.evaluation.reporters import MetricsReporter
 
 class BenchmarkRunner:
-    # 1. ARQUITECTURA FLEXIBLE: pipeline_instance ahora es opcional
+  
     def __init__(self, dataset_loader: DatasetLoader, pipeline_instance=None):
         self.dataset_loader = dataset_loader
         self.pipeline = pipeline_instance
@@ -20,7 +20,9 @@ class BenchmarkRunner:
         print(f"\n--- INICIANDO BENCHMARK END-TO-END: {video_filename} ---")
         
         # FASE DE INFERENCIA
-        await self.pipeline.process_video(video_filename, prompt)
+        video_path = os.path.join("datasets", "videos_test", video_filename)
+        
+        await self.pipeline.process_video(video_path, prompt)
         
         # FASE DE EVALUACIÓN (Delegada al método privado)
         ruta_report_ia = os.path.join(self.pipeline.results_dir, "report.json")
