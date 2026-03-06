@@ -2,7 +2,6 @@ import os
 import asyncio
 from dotenv import load_dotenv
 
-# 1. IMPORTACIONES LIMPIAS CON PREFIJO 'src.'
 from src.core.pipeline import VLMPipeline
 from src.core.model_manager import ModelManager
 from src.utils.file_utils import load_json
@@ -23,7 +22,7 @@ async def main():
     USER_PROMPT = "ves un perro en la imagen"
     
 
-    # --- 1. SELECCIÓN DE MODELO ---
+    # --- SELECCIÓN DE MODELO ---
     config_modelos = load_json(RUTAS_MODELOS)
     modelos_disponibles = list(config_modelos["vlms"].keys())
 
@@ -50,10 +49,10 @@ async def main():
         print(" [ERROR] Selección no válida. Saliendo del sistema...")
         return
 
-    # --- 2. INICIALIZACIÓN ---
+    # --- INICIALIZACIÓN ---
     try:
         print(" [2/3] Inicializando Pipeline y Dataset Loader...")
-        # Instanciamos todo pero NO ejecutamos el proceso de video manualmente
+        # Instanciamos todo pero no ejecutamos el proceso de video manualmente
         vlm_model, strategy = ModelManager(vlm_provider, vlm_model_name).load_vlm()
         pipeline = VLMPipeline(vlm_model,vlm_provider, strategy) 
         dataset_loader = DatasetLoader()
@@ -61,7 +60,7 @@ async def main():
         print(f" [ERROR CRÍTICO] Fallo al inicializar el modelo o componentes: {e}") 
         return # Cortamos la ejecución si algo falla
 
-    # --- 3. EJECUCIÓN DEL BENCHMARK ---
+    # ---  EJECUCIÓN DEL BENCHMARK ---
     print(" [3/3] Conectando el Benchmark Runner y lanzando evaluación...")
     runner = BenchmarkRunner( dataset_loader, pipeline)
 

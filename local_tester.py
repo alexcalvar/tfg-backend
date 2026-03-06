@@ -2,7 +2,6 @@ import os
 import asyncio
 from dotenv import load_dotenv
 
-# IMPORTANTE: Usamos 'src.' porque este archivo estará en la raíz
 from src.core.pipeline import VLMPipeline 
 from src.core.model_manager import ModelManager
 from src.utils.file_utils import load_json
@@ -11,7 +10,7 @@ class CLIModelTester:
     """Clase para ejecutar y probar modelos VLM en crudo por terminal, sin pasar por la API."""
     
     def __init__(self):
-        # Carga las contraseñas/API keys nada más nacer
+        
         load_dotenv()
         
         # Cargar configuraciones en memoria 
@@ -48,7 +47,7 @@ class CLIModelTester:
             desc = self.config_modelos["vlms"][clave_modelo].get("model_string", clave_modelo)
             print(f"  {i} - {desc}")
             
-        n = input("\n ➡️ Introduzca el número del modelo que desea usar: ")
+        n = input("\n  Introduzca el número del modelo que desea usar: ")
         
         try:
             indice = int(n) - 1
@@ -66,16 +65,15 @@ class CLIModelTester:
             print("  [ERROR] Selección no válida. Saliendo del sistema...")
             return
 
-        print("\n ⚙️ Arrancando motores de IA...")
+        print("\n  Arrancando motores de IA...")
         try:
-            # CORRECCIÓN CRÍTICA: Añadimos '_' para evitar el "too many values to unpack"
             vlm_model, strategy = ModelManager(vlm_provider, vlm_model_name).load_vlm()
 
             pipeline = VLMPipeline(vlm_model, vlm_provider, strategy) 
             
-            # Ejecutamos el pipeline de forma nativa
+            # Ejecutamos el pipeline de forma 
             await pipeline.process_video(ruta_video, user_prompt)
-            print("\n ✅ Prueba finalizada con éxito. Revisa la carpeta de proyectos.")
+            print("\n  Prueba finalizada con éxito. Revisa la carpeta de proyectos.")
         
         except Exception as e:
             print(f"  Ocurrió un error inesperado en el pipeline: {e}")

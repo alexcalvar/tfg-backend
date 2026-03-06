@@ -9,14 +9,14 @@ from src.evaluation.benchmark_runner import BenchmarkRunner
 def main():
     print("=== EVALUACIÓN RÁPIDA DE PROYECTOS (MODO DESACOPLADO) ===")
 
-    # 1. Interfaz interactiva para el usuario
+    
     project_folder = input("\nIntroduce el nombre exacto de la carpeta del proyecto (ej. project_1715000000): ").strip()
     ground_truth = "ground_truth.json"
     if not project_folder:
         print(" [ERROR] Debes introducir un nombre de proyecto válido.")
         return
 
-    # 2. Construcción de rutas absolutas seguras
+    #  Construcción de rutas absolutas seguras
     DIRECTORIO_RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     PROJECT_DIR = os.path.join(DIRECTORIO_RAIZ, "projects", project_folder,"results")
     GROUND_TRUTH_FILE = os.path.join(DIRECTORIO_RAIZ, "projects", project_folder,"annotations", ground_truth)
@@ -29,14 +29,14 @@ def main():
         print(" Asegúrate de haber escrito bien el nombre y de que el proyecto se ejecutó previamente.")
         return
 
-    # 3. Inicialización ultra-rápida (Sin cargar modelos VLM en la memoria RAM)
+    # Inicialización ultra-rápida (Sin cargar modelos VLM en la memoria RAM)
     print("\n [1/2] Inicializando el motor de evaluación...")
     dataset_loader = DatasetLoader()
     
     # Fíjate en la magia: le pasamos None al pipeline. No necesitamos la IA.
     runner = BenchmarkRunner(dataset_loader=dataset_loader, pipeline_instance=None)
 
-    # 4. Ejecución del cruce de datos
+    #  Ejecución del cruce de datos
     print(f" [2/2] Cruzando el report.json con la Verdad Absoluta...")
     try:
         resultados = runner.evaluate_existing_project(
