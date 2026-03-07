@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import json
 import os
-from data.validators import GroundTruthFrame
+from src.data.validators import GroundTruthFrame
 
 # --- LA INTERFAZ BASE ---
 class BaseDatasetAdapter(ABC):

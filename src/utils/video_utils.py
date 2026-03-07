@@ -3,8 +3,9 @@ import os
 import math
 import asyncio
 
-from utils.config_loader import ConfigLoader
-from utils.file_utils import ensure_dir
+from src.utils.config_loader import ConfigLoader
+from src.utils.file_utils import ensure_dir
+
 class VideoLoader:
     def __init__(self, video_path, output_folder):
         self.config = ConfigLoader()
@@ -51,15 +52,16 @@ class VideoLoader:
                     break
 
                 # optimizar los frames
-                # Redimensionamos a 640x360 para no saturar la RAM con Ollama
+                # redimensionar a 640x360 para no saturar la ram con ollama
                 frame_redimensionado = cv2.resize(frame, (resize_width,resize_height ))
 
                 filename = f"frame_{count_frame}.jpg"
                 save_path = os.path.join(self.output_folder, filename)
                 
                 cv2.imwrite(save_path, frame_redimensionado)
+                
+                paquete_frame = (save_path, count_frame, max_intents)
 
-                paquete_frame = ( save_path, count_frame, max_intents)
                 await cola_frames.put(paquete_frame) # se almacena la ruta en la cola para q luego el procesador acceda a la ruta del framse
 
                 print(f"guardado frame nº {count_frame} (Posición real: {n_frame} - Optimizado)")
@@ -80,7 +82,8 @@ class VideoLoader:
         
 
     def get_expected_frame_count(self, interval: float) -> int:
-        """Calcula matemáticamente cuántos frames se extraerán antes de iniciar el proceso."""
+        """calcula cuántos frames se extraerán antes de iniciar el proceso."""
+        
         cap = cv2.VideoCapture(self.video_path)
         if not cap.isOpened():
             return 0

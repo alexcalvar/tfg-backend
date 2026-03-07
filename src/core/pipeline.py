@@ -2,13 +2,12 @@ import os
 import time
 import asyncio
 import datetime
-import shutil # Para copiar el vídeo
 
-from utils.file_utils import ensure_dir, save_json, load_json
-from utils.project_status import ProjectStatus
-from utils.video_utils import VideoLoader
-from core.image_processor import VLMProcessor
-from utils.config_loader import ConfigLoader
+from src.utils.file_utils import ensure_dir, save_json, load_json
+from src.utils.project_status import ProjectStatus
+from src.utils.video_utils import VideoLoader
+from src.core.image_processor import VLMProcessor
+from src.utils.config_loader import ConfigLoader
 
 class VLMPipeline:
     def __init__(self, model_instance, provider_name, message_strategy):
@@ -18,10 +17,10 @@ class VLMPipeline:
         self.provider = provider_name
         self.message_strategy = message_strategy
         
-        #  carga de prompts encapsulada
+        #  carga de prompts 
         self._load_prompts()
 
-        #  estructura de carpetas aislada
+        #  estructura de carpetas 
         self._setup_project_directories()
 
         # inicialización del procesador
@@ -30,7 +29,8 @@ class VLMPipeline:
 
 
     def _load_prompts(self):
-        """Aísla la lógica de lectura del archivo de prompts."""
+        """aísla la lógica de lectura del archivo de prompts."""
+
         prompts_path = os.path.join(self.config.get_path("config_folder"), "prompts.json")
         config_prompts = load_json(prompts_path)
 
@@ -43,7 +43,7 @@ class VLMPipeline:
 
 
     def _setup_project_directories(self):
-        """Crea el entorno de carpetas encapsulado para este proyecto."""
+        """crea el entorno de carpetas encapsulado para este proyecto."""
         
         projects_folder = self.config.get_path("projects_folder")
         run_id = f"project_{int(time.time())}"
@@ -67,15 +67,12 @@ class VLMPipeline:
 
     async def process_video(self, source_video_path, prompt_usuario):
         """
-        Punto de entrada principal
-        Recibe la ruta absoluta del vídeo
+        punto de entrada principal
+        recibe la ruta absoluta del vídeo
         """
-
-        # copiamos el vídeo original a la carpeta interna del proyecto
-        file_name, internal_video_path = self._save_video(source_video_path)
-        
+        file_name = os.path.basename(source_video_path)
         # el motor de vídeo ahora lee desde nuestra copia interna
-        video_engine = VideoLoader(internal_video_path, self.frames_dir)
+        video_engine = VideoLoader(source_video_path, self.frames_dir)
         interval_time = self.config.get_video_float("frame_interval")
 
         # cacular total de frames a procesar
@@ -103,8 +100,10 @@ class VLMPipeline:
         self._update_status(ProjectStatus.COMPLETED, "Análisis finalizado con éxito.", total_frames, total_frames)
 
         try:
+            #ordenar los frmaes del json
             resultados_acumulados.sort(key=lambda x: int(x["archivo"].split('_')[1].split('.')[0]))
         except Exception:
+            # en caso de error devolver el archivo sin modificar
             pass 
        
         results_file_path = os.path.join(self.results_dir, "report.json")
@@ -115,21 +114,8 @@ class VLMPipeline:
 
 
 
-    def _save_video(self, source_video_path):
-        """ Almacena el video en la carpeta correspondiente si no está ya allí."""
-        file_name = os.path.basename(source_video_path)
-        internal_video_path = os.path.join(self.video_dir, file_name)
-        
-        # copiamos si la ruta de origen no es exactamente la misma que el destino
-        if os.path.abspath(source_video_path) != os.path.abspath(internal_video_path):
-            shutil.copy2(source_video_path, internal_video_path)
-
-        return file_name, internal_video_path
-
-
-
     def _save_execution_config(self, video_filename, user_query, total_frames):
-        """Genera el archivo que almacena la información del proyecto con todos sus parámetros."""
+        """genera el archivo que almacena la información del proyecto con todos sus parámetros."""
         config_data = {
             "execution_metadata": {
                 "project_id": os.path.basename(self.base_run_dir), 
@@ -171,9 +157,7 @@ class VLMPipeline:
             frame_path, n_frame, max_intents = paquete
 
             try:
-                respuesta_dict = await asyncio.to_thread(
-                    self.processor.analyze_frame, prompt_usuario, frame_path
-                )
+                respuesta_dict = await asyncio.to_thread(self.processor.analyze_frame, prompt_usuario, frame_path)
 
                 self._update_status(ProjectStatus.ANALYZING, "Analizando los frames extraídos del video", n_frame, total_frames)
 
@@ -223,9 +207,8 @@ class VLMPipeline:
 
 
     def _update_status(self, state: ProjectStatus, message: str, current_frame: int = 0, total_frames: int = 0):
-        """Escribe el estado actual del proceso en el disco en tiempo real."""
+        """escribe el estado actual del proceso en el disco en tiempo real."""
         status_data = {
-            # Usamos state.value para obtener el texto real (ej. "completed") y poder guardarlo en el JSON
             "state": state.value, 
             "message": message,
             "progress": {

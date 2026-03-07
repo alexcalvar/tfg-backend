@@ -1,0 +1,32 @@
+[
+    {
+        "detectado": true,
+        "descripcion": "En el fotograma se observa un perro de pelaje marrón caminando por un sendero forestal cubierto de hojas secas, rodeado de árboles y vegetación en un entorno natural.",
+        "archivo": "frame_0.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Un perro marrón está parado en el centro de un sendero forestal cubierto de hojas secas, rodeado de árboles y vegetación en un bosque otoñal.",
+        "archivo": "frame_1.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Un perro de pelaje marrón está parado en el centro de un sendero forestal cubierto de hojas caídas, rodeado de árboles y vegetación.",
+        "archivo": "frame_2.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Se observa un perro de raza pastor alemán caminando por un sendero forestal cubierto de hojas secas, llevando un tronco en la boca. El entorno muestra árboles, vegetación y un suelo con hojas caídas.",
+        "archivo": "frame_3.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Se observa un perro de raza pastor alemán caminando en un bosque con hojas caídas en el suelo.",
+        "archivo": "frame_4.jpg"
+    },
+    {
+        "detectado": false,
+        "descripcion": "La imagen muestra un bosque en otoño con hojas caídas de tonos marrones y naranjas, vegetación verde dispersa, un tronco de árbol con musgo y una pequeña corriente de agua entre raíces. No se observa ningún perro en el fotograma.",
+        "archivo": "frame_5.jpg"
+    }
+]

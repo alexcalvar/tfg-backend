@@ -1,7 +1,7 @@
 import configparser
 import os
 
-from utils.file_utils import save_json 
+from src.utils.file_utils import save_json 
 
 class ConfigLoader:
     _instance = None
@@ -39,7 +39,7 @@ class ConfigLoader:
     
     def get_all_config_as_dict(self) -> dict:
         """
-        Convierte toda la configuración actual cargada en memoria 
+        convierte toda la configuración actual cargada en memoria 
         a un diccionario estándar de Python.
         """
         config_dict = {}
@@ -50,7 +50,7 @@ class ConfigLoader:
 
     def export_config(self, output_path: str):
         """
-        Guarda una copia exacta de la configuración usada en esta ejecución.
+        guarda una copia exacta de la configuración usada en esta ejecución.
         """
         config_data = self.get_all_config_as_dict()
         save_json(config_data, output_path)

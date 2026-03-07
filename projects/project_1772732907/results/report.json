@@ -1,0 +1,32 @@
+[
+    {
+        "detectado": true,
+        "descripcion": "Un perro de pelaje marrón y negro camina por un sendero forestal cubierto de hojas secas, rodeado de árboles y vegetación.",
+        "archivo": "frame_0.jpg"
+    },
+    {
+        "detectado": false,
+        "descripcion": "Error de conexión o sistema: Unterminated string starting at: line 1 column 54 (char 53)",
+        "archivo": "frame_1.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Un perro marrón con la cola levantada sostiene un palo mientras está parado en el centro de un sendero forestal cubierto de hojas caídas, rodeado de árboles y vegetación.",
+        "archivo": "frame_2.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Un perro pastor alemán de pelaje claro camina por un sendero cubierto de hojas secas en un bosque, sosteniendo un tronco en la boca. El entorno incluye árboles, vegetación y hojas caídas en el suelo.",
+        "archivo": "frame_3.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Un perro de pelaje marrón y blanco está de pie en un sendero cubierto de hojas secas en un bosque, con árboles y vegetación en el fondo.",
+        "archivo": "frame_4.jpg"
+    },
+    {
+        "detectado": false,
+        "descripcion": "La imagen muestra un bosque con hojas caídas de otoño, vegetación verde y un tronco de árbol con musgo. No se observa ningún perro en el fotograma.",
+        "archivo": "frame_5.jpg"
+    }
+]
