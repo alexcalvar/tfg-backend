@@ -8,7 +8,7 @@ venv/
 .venv/
 env/
 
-# --- VARIABLES DE ENTORNO (SECRETOS) ---
+# --- VARIABLES DE ENTORNO  ---
 .env
 .env.*
 !.env.example  # (Opcional) Si quieres subir un ejemplo sin claves reales
@@ -21,14 +21,12 @@ Thumbs.db
 .vscode/
 .idea/
 
-# --- PROYECTO TFG: DATOS DINÁMICOS ---
+
 # Ignoramos los videos y fotos, pero queremos mantener la estructura de carpetas
 datasets/
 projects/**/frames/
 projects/**/video/
 projects/**/annotations/
-# Si quieres ignorar los resultados json locales también:
-# projects/**/results/
 
 # --- ARCHIVOS MULTIMEDIA  ---
 *.mp4

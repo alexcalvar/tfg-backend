@@ -47,3 +47,22 @@ async def save_upload_file(upload_file: UploadFile, destination_path: str) -> st
     finally:
         # resetear el puntero del archivo por si otra función necesita leerlo después
         await upload_file.seek(0)
+
+def get_list_models(config_path: str) -> dict:
+    """
+    Devuelve los proveedores y los modelos q soportan
+    """
+    try:
+        config = load_json(config_path)
+        vlms_config = config.get("vlms", {})
+        
+        estructura = {
+            proveedor: list(modelos.keys()) 
+            for proveedor, modelos in vlms_config.items()
+        }
+        
+        return estructura
+
+    except Exception as e:
+        print(f"Error al obtener la estructura de proveedores: {e}")
+        return {}        

@@ -1,58 +1,68 @@
 {
     "vlms": {
-        "gemini_rapido": {
-            "provider": "google",
-            "model_string": "gemini-1.5-flash",
-            "temperature": 0.0,
-            "max_tokens": 1024,
-            "descripcion": "Modelo multimodal rápido. Excelente para ver colores y procesar frames a alta velocidad."
+        "llamacpp": {
+            "qwen2-vl-7b": {
+                "model_string" : "Qwen2-VL-7B-Instruct-Q4_K_M",
+                "model_path" : "models/Qwen2-VL-7B-Instruct-Q4_K_M.gguf",
+                "handler_type" : "qwen2.5",
+                "vision_projector_path" : "models/mmproj-Qwen2-VL-7B-Instruct-f16.gguf",
+                "temperature" : 0.0,
+                "n_ctx" : 4096
+            }                
         },
-        "gemini_pro": {
-            "provider": "google",
-            "model_string": "gemini-1.5-pro",
-            "temperature": 0.0,
-            "max_tokens": 1024,
-            "descripcion": "Modelo multimodal avanzado. Más lento, pero con mayor capacidad de razonamiento visual para escenas complejas."
+        "google": {
+            "gemini_rapido": {
+                "model_string": "gemini-1.5-flash",
+                "temperature": 0.0,
+                "max_tokens": 1024,
+                "descripcion": "Modelo multimodal rápido. Excelente para ver colores y procesar frames a alta velocidad."
+            },
+            "gemini_pro": {
+                "model_string": "gemini-1.5-pro",
+                "temperature": 0.0,
+                "max_tokens": 1024,
+                "descripcion": "Modelo multimodal avanzado. Más lento, pero con mayor capacidad de razonamiento visual para escenas complejas."
+            }
         },
-        "llama3.2-vision": {
-            "provider": "ollama",
-            "model_string": "llama3.2-vision",
-            "temperature": 0.0,
-            "format": "json",
-            "descripcion": "Modelo grande. Lento con alta precisión de detalle."
+        "ollama": {
+            "llama3.2-vision": {
+                "model_string": "llama3.2-vision",
+                "temperature": 0.0,
+                "format": "json",
+                "descripcion": "Modelo grande. Lento con alta precisión de detalle."
+            },
+            "qwen_local": {
+                "model_string": "qwen3-vl:8b",
+                "temperature": 0.0,
+                "format": "json",
+                "descripcion": "Modelo Qwen 8B Oficial. Versión optimizada por Ollama."
+            },
+            "gemma3_local": {
+                "model_string": "gemma3:4b",
+                "temperature": 0.0,
+                "format": "json",
+                "descripcion": "Modelo VLM de Google (4B). Excelente relación calidad/rendimiento en local."
+            },
+            "qwen_oficial_4b": {
+                "model_string": "qwen3-vl:4b",
+                "temperature": 0.0,
+                "format": "json",
+                "descripcion": "Modelo Qwen oficial de 4B. El equilibrio perfecto entre inteligencia y consumo de RAM."
+            }
         },
-        "qwen_local": {
-            "provider": "ollama",
-            "model_string": "qwen3-vl:8b", 
-            "temperature": 0.0,
-            "format": "json",
-            "descripcion": "Modelo Qwen 8B Oficial. Versión optimizada por Ollama."
-        },"gemma3_local": {
-            "provider": "ollama",
-            "model_string": "gemma3:4b",
-            "temperature": 0.0,
-            "format": "json",
-            "descripcion": "Modelo VLM de Google (4B). Excelente relación calidad/rendimiento en local."
-        },"qwen_oficial_4b": {
-            "provider": "ollama",
-            "model_string": "qwen3-vl:4b",
-            "temperature": 0.0,
-            "format": "json",
-            "descripcion": "Modelo Qwen oficial de 4B. El equilibrio perfecto entre inteligencia y consumo de RAM."
-        },
-        "nemotron_nvidia": {
-            "provider": "openroute",
-            "model_string": "nvidia/nemotron-nano-12b-v2-vl:free",
-            "temperature": 0.0,
-            "max_tokens": 1024,
-            "descripcion": "Modelo multimodal de Nvidia alojado en la nube vía OpenRouter."
-        },
-        "qwen_cloud_free": {
-            "provider": "openroute",
-            "model_string": "qwen/qwen2.5-vl-32b-instruct:free",
-            "temperature": 0.0,
-            "max_tokens": 1024,
-            "descripcion": "Modelo gigante de Qwen (32B) ejecutado en la nube vía OpenRouter."
+        "openroute": {
+            "nemotron_nvidia": {
+                "model_string": "nvidia/nemotron-nano-12b-v2-vl:free",
+                "temperature": 0.0,
+                "max_tokens": 1024,
+                "descripcion": "Modelo multimodal de Nvidia alojado en la nube vía OpenRouter."
+            },
+            "qwen_cloud_free": {
+                "model_string": "qwen/qwen2.5-vl-32b-instruct:free",
+                "temperature": 0.0,
+                "max_tokens": 1024,
+                "descripcion": "Modelo gigante de Qwen (32B) ejecutado en la nube vía OpenRouter."
+            }
         }
     },
     
