@@ -15,7 +15,7 @@ class BaseDatasetAdapter(ABC):
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"[ERROR] No se encuentra el dataset en: {file_path}")
 
-# --- ADAPTADOR DE EJEMPLO (Formato JSON Simple) ---
+# --- Formato JSON Simple ---
 class SimpleJSONAdapter(BaseDatasetAdapter):
     """
     Traduce un JSON básico con este formato:
@@ -41,4 +41,4 @@ class SimpleJSONAdapter(BaseDatasetAdapter):
             
         return diccionario_universal
 
-# Puedes añadir en el futuro un CSVAdapter, un YOLOAdapter, etc...
+#  añadir un CSVAdapter, un YOLOAdapter, etc...

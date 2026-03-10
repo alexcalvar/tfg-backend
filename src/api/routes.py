@@ -6,7 +6,7 @@ from src.core.pipeline import VLMPipeline
 from src.core.model_manager import ModelManager
 
 from src.utils.config_loader import ConfigLoader
-from src.utils.file_utils import load_json, save_upload_file
+from src.utils.file_utils import load_json, save_upload_file, get_list_models
 from src.utils.project_status import ProjectStatus
 
 from src.api.schemas import  HTTPResponse
@@ -50,7 +50,7 @@ async def analyze_video(
     )
 
 
-@endpoints.get("/api/v1/status/{project_id}", response_model=HTTPResponse)
+@endpoints.get("/api/v1/status/{project_id}", response_model=HTTPResponse, status_code=200)
 async def get_project_status(project_id: str):
     """Consulta si un proyecto está en cola, procesando o finalizado."""
 
@@ -71,7 +71,7 @@ async def get_project_status(project_id: str):
         raise HTTPException(status_code=500, detail="Error interno en lectura del archivo status.json")    
 
 
-@endpoints.get("/api/v1/results/{project_id}", response_model=HTTPResponse)
+@endpoints.get("/api/v1/results/{project_id}", response_model=HTTPResponse, status_code=200)
 async def get_project_results(project_id: str):
     """Devuelve el report.json final una vez que el vídeo ha sido procesado."""
    
@@ -114,18 +114,19 @@ async def get_project_results(project_id: str):
         )
     
 
-@endpoints.get("/api/v1/providers") #como tal lo q pude ser util ver los proveedores porq los modelos unicamente hay q introducir el nombre 
+@endpoints.get("/api/v1/providers", response_model=HTTPResponse, status_code=200) #como tal lo q pude ser util ver los proveedores porq los modelos unicamente hay q introducir el nombre 
 async def list_available_models():
     """Lee el models_config.json y devuelve los modelos VLM que la API puede usar."""
-    pass
+    
+    config_folder_path = config.get_path("config_folder")
 
-@endpoints.get("/api/v1/projects")
-async def list_all_projects():
-    """Devuelve una lista con todas las carpetas de proyectos históricos."""
-    pass
+    models_config_path = os.path.join(config_folder_path, "models_config.json")
 
+    models_list = get_list_models(models_config_path)
 
-@endpoints.post("/api/v1/evaluate/{project_id}")
-async def evaluate_project(project_id: str):
-    """Ejecuta el BenchmarkRunner sobre un proyecto ya finalizado."""
-    pass
+    return HTTPResponse(
+        success=True,
+        message="Lista de todos los modelos soportados por el sistema",
+        data=models_list
+    )
+

@@ -1,14 +1,13 @@
 from typing import Generic, TypeVar, Optional
 from pydantic import BaseModel
-
-# Definimos una variable de tipo 'T' 
+ 
 T = TypeVar('T')
 
 class HTTPResponse(BaseModel, Generic[T]):
     """Envoltorio base para TODAS las respuestas de la API."""
     success: bool = True
     message: str
-    data: Optional[T] = None  # Aquí inyectaremos dinámicamente los datos específicos
+    data: Optional[T] = None 
 
 
 class ProjectProgress(BaseModel):
