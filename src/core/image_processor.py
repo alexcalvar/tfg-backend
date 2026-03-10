@@ -14,7 +14,7 @@ class VLMProcessor:
         self.task_template = task_template 
 
 
-    def  analyze_frame( self,user_prompt, image_path):
+    def  analyze_frame( self,user_prompt, image_path, n_frame):
         image_b64 = self._encode_image( image_path)
 
         prompt_formateado = self.task_template.replace("{user_query}", user_prompt)

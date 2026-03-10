@@ -157,7 +157,7 @@ class VLMPipeline:
             frame_path, n_frame, max_intents = paquete
 
             try:
-                respuesta_dict = await asyncio.to_thread(self.processor.analyze_frame, prompt_usuario, frame_path)
+                respuesta_dict = await asyncio.to_thread(self.processor.analyze_frame( prompt_usuario, frame_path))
 
                 self._update_status(ProjectStatus.ANALYZING, "Analizando los frames extraídos del video", n_frame, total_frames)
 
