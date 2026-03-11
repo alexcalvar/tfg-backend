@@ -5,6 +5,7 @@ import asyncio
 
 from src.utils.config_loader import ConfigLoader
 from src.utils.file_utils import ensure_dir
+from src.data.validators import FramesPath
 
 class VideoLoader:
     def __init__(self, video_path, output_folder):
@@ -60,7 +61,7 @@ class VideoLoader:
                 
                 cv2.imwrite(save_path, frame_redimensionado)
                 
-                paquete_frame = (save_path, count_frame, max_intents)
+                paquete_frame = FramesPath(count_frame,save_path, max_intents)
 
                 await cola_frames.put(paquete_frame) # se almacena la ruta en la cola para q luego el procesador acceda a la ruta del framse
 

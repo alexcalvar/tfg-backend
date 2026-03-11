@@ -1,10 +1,13 @@
 import base64 
 import json
 import os
-import asyncio
+
 
 from langchain_core.language_models.chat_models import BaseChatModel
+
 from src.core.adapters.message_builders import MessageBuilderStrategy
+
+from src.data.validators import VideoFrame, FramesPath
 
 class VLMProcessor:
     def __init__(self, vlm_model_instance : BaseChatModel, selected_message_strategy : MessageBuilderStrategy, system_prompt, task_template):
@@ -14,19 +17,30 @@ class VLMProcessor:
         self.task_template = task_template 
 
 
-    def  analyze_frame( self,user_prompt, image_path, n_frame):
-        image_b64 = self._encode_image( image_path)
+    def  analyze_frame( self,user_prompt, images_path : list[FramesPath]):
+        
+        list_frames : list[VideoFrame] = []
+
+        for frame in images_path:
+            
+            #leer imagen 
+            frame_b64 = self._encode_image(frame.frame_path)
+
+            frame_info = VideoFrame(frame_id=frame.frame_id, img_b64= frame_b64)
+
+            list_frames.append(frame_info)
+
 
         prompt_formateado = self.task_template.replace("{user_query}", user_prompt)
 
         # generar el msg de la forma q espera el modelo
-        final_prompt = self.message_strategy.build_messages(self.sys_prompt, prompt_formateado, image_b64)
+        final_prompt = self.message_strategy.build_messages(self.sys_prompt, prompt_formateado, list_frames)
     
         response = self.vlm.invoke(final_prompt)
+        
+        #clear_response = self._clean_json_string(response.content)
 
-        clear_response = self._clean_json_string(response.content)
-
-        return json.loads(clear_response)
+        return json.loads(response.content)
         
 
     def _encode_image(self, image_path):

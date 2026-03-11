@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from langchain_core.messages import HumanMessage, SystemMessage
 
-from data.validators import VideoFrame
+from src.data.validators import VideoFrame
 
 class MessageBuilderStrategy(ABC):
     """
