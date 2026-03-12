@@ -1,0 +1,32 @@
+[
+    {
+        "detectado": true,
+        "descripcion": "Un perro de color marrón con una cola larga y un hocico puntiagudo camina por un sendero en el bosque.",
+        "archivo": "frame_0.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Un perro de color marrón está caminando por un sendero en el bosque.",
+        "archivo": "frame_1.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Un perro de color marrón con una cola larga y un hocico puntiagudo está caminando por un sendero en el bosque.",
+        "archivo": "frame_2.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "El perro esta en la imagen",
+        "archivo": "frame_3.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Un perro de color marron con una cinta en el cuello, caminando por un sendero en el bosque.",
+        "archivo": "frame_4.jpg"
+    },
+    {
+        "detectado": false,
+        "descripcion": "No se ve un perro en la imagen",
+        "archivo": "frame_5.jpg"
+    }
+]

@@ -1,0 +1,19 @@
+{
+    "execution_metadata": {
+        "project_id": "project_1773260044",
+        "timestamp": "2026-03-11 21:14:05",
+        "status": "initialized"
+    },
+    "model_configuration": {
+        "model_object": "cliente_nativo=<llama_cpp.llama.Llama object at 0x000002343A10C610>",
+        "provider": "llamacpp",
+        "system_prompt": "You are an expert system in video sequence analysis. You will receive a batch containing one or multiple frames extracted from a video. Your task is to analyze EACH frame independently based on the user's query.\n\nSTRICT OUTPUT RULE:\nYou must respond SOLELY and EXCLUSIVELY with a JSON object containing a single key called 'resultados'. The value of 'resultados' must be an array (list) containing exactly the same number of elements as the images you have received, maintaining strict chronological order.\n\nExample of expected format for 2 images:\n{\n  \"resultados\": [\n    {\n      \"detectado\": true,\n      \"descripcion\": \"Description of frame 0\"\n    },\n    {\n      \"detectado\": false,\n      \"descripcion\": \"Description of frame 1\"\n    }\n  ]\n}\n\nDo not include any text outside the JSON. Do not use markdown code blocks.",
+        "task_template": "User query: '{user_query}'\n\nAnalyze the provided frames below and return the JSON object with the individual results for each one."
+    },
+    "inference_parameters": {
+        "user_query": "Dime si ves un perro en la imagen",
+        "frame_interval_seconds": 1.0,
+        "total_frames": 6,
+        "video_source": "video_perro_prueba.mp4"
+    }
+}

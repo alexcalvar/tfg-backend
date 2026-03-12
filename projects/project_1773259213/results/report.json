@@ -1,0 +1,62 @@
+[
+    {
+        "detectado": true,
+        "descripcion": "En la imagen se puede ver un perro en el bosque.",
+        "archivo": "frame_0.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Un perro está corriendo por un camino de hojas en un bosque.",
+        "archivo": "frame_1.jpg"
+    },
+    {
+        "detectado": false,
+        "descripcion": "Error Crítico: Error de sistema/conexión: Expecting value: line 1 column 1 (char 0)",
+        "archivo": "frame_2.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "En la imagen se puede ver un perro corriendo por un camino de hojas en un bosque.",
+        "archivo": "frame_3.jpg"
+    },
+    {
+        "detectado": false,
+        "descripcion": "Error Crítico: Error de sistema/conexión: Expecting value: line 1 column 1 (char 0)",
+        "archivo": "frame_4.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Un perro está corriendo por un camino de hojas en un bosque.",
+        "archivo": "frame_5.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Un perro está presente en la imagen.",
+        "archivo": "frame_6.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "En la imagen se puede ver un perro.",
+        "archivo": "frame_7.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "En la imagen se puede ver un perro.",
+        "archivo": "frame_8.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "En la imagen se puede ver un perro.",
+        "archivo": "frame_9.jpg"
+    },
+    {
+        "detectado": false,
+        "descripcion": "No se detectó un perro en la imagen",
+        "archivo": "frame_10.jpg"
+    },
+    {
+        "detectado": false,
+        "descripcion": "No se detecta un perro en la imagen",
+        "archivo": "frame_11.jpg"
+    }
+]

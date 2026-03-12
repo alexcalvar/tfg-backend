@@ -59,6 +59,8 @@ class ModelManager:
 
 
             case "google":
+                
+                vlm_model = vlms_configs[self.vlm_provider_name][self.vlm_name]
 
                 api_key = os.getenv("GOOGLE_API_KEY")
 
@@ -70,7 +72,7 @@ class ModelManager:
                 message_strategy = CloudMessageBuilder()
                 
                 modelo =  ChatGoogleGenerativeAI(
-                    model=self.vlm_name, 
+                    model=vlm_model["model_string"], 
                     google_api_key=api_key,
                     temperature=0,
                     )
@@ -78,19 +80,24 @@ class ModelManager:
                 return modelo, message_strategy
             
             case "ollama":
+
+                vlm_model = vlms_configs[self.vlm_provider_name][self.vlm_name]
                 
                 print(f" Conectando con Ollama Local: {self.vlm_name}")
 
                 message_strategy = LocalMessageBuilder()
                 modelo = ChatOllama(
-                    model=self.vlm_name,
+                    model=vlm_model["model_string"],
                     temperature=0,
-                    format="json"
+                    #format="json"
                 )
 
                 return modelo, message_strategy
             
             case "openroute":
+
+                vlm_model = vlms_configs[self.vlm_provider_name][self.vlm_name]
+
                 print(f"Conectando con Open Route en remoto:  {self.vlm_name}")
 
                 api_key_or=os.getenv("OPEN_ROUTE_API_KEY")
@@ -102,7 +109,7 @@ class ModelManager:
                 
                 modelo =  ChatOpenAI(
                     base_url="https://openrouter.ai/api/v1",
-                    model=self.vlm_name,
+                    model=vlm_model["model_string"],
                     temperature=0,
                     api_key=api_key_or
                 )
