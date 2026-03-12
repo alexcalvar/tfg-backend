@@ -91,12 +91,11 @@ class VideoLoader:
             
         fps = cap.get(cv2.CAP_PROP_FPS)
         total_video_frames = cap.get(cv2.CAP_PROP_FRAME_COUNT)
-        cap.release() # Cerramos inmediatamente, solo queríamos leer los metadatos
+        cap.release() 
         
         if fps > 0 and total_video_frames > 0:
             step = math.ceil(fps * interval)
             if step > 0:
-                # Si el total es 95 y saltamos de 30 en 30, ceil(95/30) = 4 frames
                 return math.ceil(total_video_frames / step) 
         return 0
 

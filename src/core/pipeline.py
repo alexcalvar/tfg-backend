@@ -93,7 +93,6 @@ class VLMPipeline:
 
         await productor_task
         
-        # Actualizamos la firma para guardar el nombre del archivo
         self._save_execution_config(file_name, prompt_usuario, total_frames)
 
         await cola_frames.join() 
@@ -151,7 +150,7 @@ class VLMPipeline:
         flag = True
 
         while flag:
-           # 1. Obtener datos (Abstraído)
+           #  Obtener datos 
             frames_to_analyze = await self._extraer_lote_seguro(cola_frames, FRAMES_PER_BATCH)
 
             if not frames_to_analyze: #lista vacia
@@ -164,10 +163,10 @@ class VLMPipeline:
                 flag = False
                 
 
-            # 3. Delegar el procesamiento pesado
+            #  delegar el procesamiento pesado
             await self._procesar_lote(frames_to_analyze, total_frames, prompt_usuario, resultados, cola_frames)
 
-            # Liberar la memoria de la cola correspondiente a los frames procesados 
+            # liberar la memoria de la cola correspondiente a los frames procesados 
             for _ in frames_to_analyze:
                 cola_frames.task_done()
             
@@ -206,10 +205,10 @@ class VLMPipeline:
                 ultimo_frame_id = lote[0].frame_id 
                 self._update_status(ProjectStatus.ANALYZING, f"Analizando lote de {len(lote)} frames...", ultimo_frame_id, total_frames)
 
-                # Llamada a la IA
+                # llamada a la IA
                 respuestas_lote = await asyncio.to_thread(self.processor.analyze_frame, prompt_usuario, lote)
 
-                # Si el modelo siguió el estándar del objeto raíz, extraemos la lista
+                # si el modelo siguió el estándar del objeto raíz, extraer la lista
                 if "resultados" in respuestas_lote:
                     respuestas_lote = respuestas_lote["resultados"]
 
@@ -218,12 +217,12 @@ class VLMPipeline:
                         for frame_obj, respuesta_dict in zip(lote, respuestas_lote):
                             await self._evaluar_frame_individual(frame_obj, respuesta_dict, resultados, cola)
                 
-                # Si el modelo alucinó por completo y no devolvió una lista
+                # Si el modelo alucinó y no devolvió una lista
                     else:
                         await self._gestionar_fallo_lote(lote, resultados, cola, "El modelo no devolvió una lista coherente.")
 
             except Exception as e: 
-                # Si se cae internet o la API da timeout, salvamos el lote
+                # si se cae internet o la API da timeout, salvamos el lote
                 print(f" Error de conexión analizando el lote: {e}")
                 await self._gestionar_fallo_lote(lote, resultados, cola, f"Error de sistema/conexión: {e}")
 
