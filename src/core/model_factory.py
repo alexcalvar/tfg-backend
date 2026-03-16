@@ -8,29 +8,29 @@ from langchain_openai import ChatOpenAI
 from llama_cpp import Llama
 
 from src.core.adapters.llamacpp_adapter import CustomVisionLlamaCpp
-from src.core.adapters.message_builders import CloudMessageBuilder,LocalMessageBuilder
+from src.core.message_strategies.message_builders import CloudMessageBuilder,LocalMessageBuilder
 from src.core.adapters.vlm_handler import VLM_HANDLERS
+from src.utils.config_loader import ConfigLoader
 
 from src.utils.file_utils import load_json 
 
 
-class ModelManager:
-    def __init__(self, vlm_provider, vlm_model_name, llm_model_name = None):
-        self.vlm_name= vlm_model_name
-        self.llm_name= llm_model_name
-        self.vlm_provider_name = vlm_provider
+class ModelFactory:
+    def __init__(self):
+        self.config = ConfigLoader()
+        config_folder_path = self.config.get_path("config_folder")
+        models_config_path = os.path.join(config_folder_path, "models_config.json")
+        self.models_config = load_json(models_config_path)
 
-        self.models_config = load_json("configs/models_config.json")
-
-    def load_vlm(self):
+    def load_vlm(self,vlm_provider_name, vlm_name):
 
         vlms_configs = self.models_config["vlms"]
 
-        match self.vlm_provider_name:
+        match vlm_provider_name:
             
             case "llamacpp":
                 
-                vlm_model = vlms_configs[self.vlm_provider_name][self.vlm_name]
+                vlm_model = vlms_configs[vlm_provider_name][vlm_name]
 
                 print("Conectando con Llama cpp local:")
 
@@ -60,14 +60,14 @@ class ModelManager:
 
             case "google":
                 
-                vlm_model = vlms_configs[self.vlm_provider_name][self.vlm_name]
+                vlm_model = vlms_configs[vlm_provider_name][vlm_name]
 
                 api_key = os.getenv("GOOGLE_API_KEY")
 
                 if not api_key:
                  raise ValueError(" Falta GOOGLE_API_KEY en .env")
                 
-                print(f" Conectando con Google en remoto: {self.vlm_name}")
+                print(f" Conectando con Google en remoto: {vlm_name}")
             
                 message_strategy = CloudMessageBuilder()
                 
@@ -81,9 +81,9 @@ class ModelManager:
             
             case "ollama":
 
-                vlm_model = vlms_configs[self.vlm_provider_name][self.vlm_name]
+                vlm_model = vlms_configs[vlm_provider_name][vlm_name]
                 
-                print(f" Conectando con Ollama Local: {self.vlm_name}")
+                print(f" Conectando con Ollama Local: {vlm_name}")
 
                 message_strategy = LocalMessageBuilder()
                 modelo = ChatOllama(
@@ -96,9 +96,9 @@ class ModelManager:
             
             case "openroute":
 
-                vlm_model = vlms_configs[self.vlm_provider_name][self.vlm_name]
+                vlm_model = vlms_configs[vlm_provider_name][vlm_name]
 
-                print(f"Conectando con Open Route en remoto:  {self.vlm_name}")
+                print(f"Conectando con Open Route en remoto:  {vlm_name}")
 
                 api_key_or=os.getenv("OPEN_ROUTE_API_KEY")
 
@@ -117,19 +117,19 @@ class ModelManager:
                 return modelo, message_strategy
             
             case _:
-                raise ValueError(f" El proveedor VLM '{self.vlm_provider_name}' no está soportado en este Manager.")
+                raise ValueError(f" El proveedor VLM '{vlm_provider_name}' no está soportado en este Manager.")
             
 
 
-    def load_llm(self):
-        match self.llm_name:
+    def load_llm(self, llm_provider_name, llm_name):
+        match llm_provider_name:
             case "llama3-70b-8192" | "llama3-8b-8192" | "mixtral-8x7b-32768":
 
                 return ChatGroq(
                     api_key=os.environ.get("GROQ_API_KEY"),
-                    model=self.llm_name,
+                    model=llm_name,
                     temperature=0
                 )
             
             case _:
-                raise ValueError(f" El modelo VLM '{self.llm_name}' no está soportado en este Manager.")
+                raise ValueError(f" El modelo VLM '{llm_name}' no está soportado en este Manager.")

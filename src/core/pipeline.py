@@ -3,7 +3,8 @@ import time
 import asyncio
 import datetime
 
-from src.utils.file_utils import ensure_dir, save_json, load_json
+from src.core.processing_strategies.base_strategy import ProcessingStrategy
+from src.utils.file_utils import ensure_dir, save_json
 from src.utils.project_status import ProjectStatus
 from src.utils.video_utils import VideoLoader
 from src.utils.config_loader import ConfigLoader
@@ -13,35 +14,22 @@ from src.core.image_processor import VLMProcessor
 from src.data.validators import FramesPath
 
 class VLMPipeline:
-    def __init__(self, model_instance, provider_name, message_strategy):
+
+    def __init__(self, model_instance, provider_name, message_strategy, processing_strategy: ProcessingStrategy):
         
         self.config = ConfigLoader()
         self.vlm = model_instance
         self.provider = provider_name
         self.message_strategy = message_strategy
         
-        #  carga de prompts 
-        self._load_prompts()
+        self.processing_strategy = processing_strategy # Guardamos la estrategia inyectada
+        
+        # Le pedimos a la estrategia que cargue SUS prompts
+        self.system_prompt, self.task_template = self.processing_strategy.load_prompts()
 
-        #  estructura de carpetas 
         self._setup_project_directories()
 
-        # inicialización del procesador
         self.processor = VLMProcessor(self.vlm, self.message_strategy, self.system_prompt, self.task_template)
-
-
-
-    def _load_prompts(self):
-        """aísla la lógica de lectura del archivo de prompts."""
-
-        prompts_path = os.path.join(self.config.get_path("config_folder"), "prompts.json")
-        config_prompts = load_json(prompts_path)
-
-        lista_prompts = self.config.get_sys_config("selected_vlm_prompts_list")
-        sys_prompt_key = self.config.get_sys_config("selected_sys_prompt")
-        
-        self.system_prompt = config_prompts[lista_prompts][sys_prompt_key]["system_instruction"]
-        self.task_template = config_prompts[lista_prompts][sys_prompt_key]["task_template"]
 
 
 
@@ -150,23 +138,21 @@ class VLMPipeline:
         flag = True
 
         while flag:
-           #  Obtener datos 
             frames_to_analyze = await self._extraer_lote_seguro(cola_frames, FRAMES_PER_BATCH)
 
-            if not frames_to_analyze: #lista vacia
+            if not frames_to_analyze: 
                 print("Fin de la extracción detectado. Cerrando procesador.")
                 break      
 
-            #ultimo batch incompleto
             if len(frames_to_analyze) < FRAMES_PER_BATCH :
                 print("Iniciando proceso de ultimo batch (tamaño de este inferior al general)")
                 flag = False
                 
+            ultimo_frame_id = frames_to_analyze[-1].frame_id 
+            self._update_status(ProjectStatus.ANALYZING, f"Analizando lote de {len(frames_to_analyze)} frames...", ultimo_frame_id, total_frames)
 
-            #  delegar el procesamiento pesado
-            await self._procesar_lote(frames_to_analyze, total_frames, prompt_usuario, resultados, cola_frames)
+            await self.processing_strategy.procesar_lote(self.processor,prompt_usuario, frames_to_analyze, cola_frames, resultados)
 
-            # liberar la memoria de la cola correspondiente a los frames procesados 
             for _ in frames_to_analyze:
                 cola_frames.task_done()
             
@@ -196,77 +182,6 @@ class VLMPipeline:
                 count_frames=count_frames+1
 
         return lote
-
-
-
-    async def _procesar_lote(self, lote: list[FramesPath], total_frames: int, prompt_usuario: str, resultados: list, cola: asyncio.Queue):
-            """Envía un lote al VLM y delega la validación de las respuestas."""
-            try:
-                ultimo_frame_id = lote[0].frame_id 
-                self._update_status(ProjectStatus.ANALYZING, f"Analizando lote de {len(lote)} frames...", ultimo_frame_id, total_frames)
-
-                # llamada a la IA
-                respuestas_lote = await asyncio.to_thread(self.processor.analyze_frame, prompt_usuario, lote)
-
-                # si el modelo siguió el estándar del objeto raíz, extraer la lista
-                if "resultados" in respuestas_lote:
-                    respuestas_lote = respuestas_lote["resultados"]
-
-                # verificar q devuelva una lista con los resultados de cada frame y que el tamalo de la lista sea igual al numero de frames enviados 
-                    if isinstance(respuestas_lote, list) and len(respuestas_lote) == len(lote):
-                        for frame_obj, respuesta_dict in zip(lote, respuestas_lote):
-                            await self._evaluar_frame_individual(frame_obj, respuesta_dict, resultados, cola)
-                
-                # Si el modelo alucinó y no devolvió una lista
-                    else:
-                        await self._gestionar_fallo_lote(lote, resultados, cola, "El modelo no devolvió una lista coherente.")
-
-            except Exception as e: 
-                # si se cae internet o la API da timeout, salvamos el lote
-                print(f" Error de conexión analizando el lote: {e}")
-                await self._gestionar_fallo_lote(lote, resultados, cola, f"Error de sistema/conexión: {e}")
-
-
-    async def _evaluar_frame_individual(self, frame_obj: FramesPath, respuesta_dict: dict, resultados: list, cola: asyncio.Queue):
-        """Valida el JSON de un único frame. Lo guarda si es correcto o gestiona su reintento si falla."""
-        MAX_INTENTOS_COLA = self.config.get_video_int("max_intents_frame")
-
-        if isinstance(respuesta_dict, dict) and "detectado" in respuesta_dict and "descripcion" in respuesta_dict:
-            respuesta_dict["archivo"] = f"frame_{frame_obj.frame_id}.jpg"
-            resultados.append(respuesta_dict)
-            print(f" Terminado: frame_{frame_obj.frame_id}")
-        
-        else:
-            actual_intent = frame_obj.intentos - 1
-
-            if actual_intent <= 0:
-                resultados.append({
-                    "detectado": False,
-                    "descripcion": f"Error: El modelo no generó un JSON válido tras {MAX_INTENTOS_COLA} intentos.",
-                    "archivo": f"frame_{frame_obj.frame_id}.jpg"
-                })
-                print(f"  [ERROR] Frame {frame_obj.frame_id} falló demasiadas veces. Guardando defecto.")
-            else:
-                reintentar_paquete = FramesPath(frame_id=frame_obj.frame_id, frame_path=frame_obj.frame_path, intentos=actual_intent)
-                print(f" [ADVERTENCIA] JSON inválido frame {frame_obj.frame_id}. Intentos restantes: {actual_intent}")
-                await cola.put(reintentar_paquete)
-
-
-    async def _gestionar_fallo_lote(self, lote: list[FramesPath], resultados: list, cola: asyncio.Queue, motivo: str):
-        """Re-encola un lote completo si hubo un error crítico de formato o red, descontando un intento."""
-        print(f" [ALERTA] Salvando lote debido a: {motivo}")
-        
-        for frame_obj in lote:
-            actual_intent = frame_obj.intentos - 1
-            
-            if actual_intent > 0:
-                await cola.put(FramesPath(frame_id=frame_obj.frame_id, frame_path=frame_obj.frame_path, intentos=actual_intent))
-            else:
-                resultados.append({
-                    "detectado": False,
-                    "descripcion": f"Error Crítico: {motivo}",
-                    "archivo": f"frame_{frame_obj.frame_id}.jpg"
-                })
 
 
 

@@ -4,7 +4,8 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from src.core.pipeline import VLMPipeline 
-from src.core.model_manager import ModelManager
+from src.core.model_factory import ModelFactory
+from src.core.processing_factory import ProcessingFactory
 from src.utils.file_utils import load_json
 
 class CLIModelTester:
@@ -34,7 +35,7 @@ class CLIModelTester:
 
         print("\n Modelos VLM disponibles en la configuración:")
         
-        # 1. Aplanamos la jerarquía del JSON para que sea seleccionable
+        # Aplanamos la jerarquía del JSON para que sea seleccionable
         opciones_menu = []
         vlms_config = self.config_modelos.get("vlms", {})
         
@@ -50,7 +51,7 @@ class CLIModelTester:
             print("  [ERROR] No hay modelos configurados en tu archivo JSON.")
             return
 
-        # 2. Mostramos el menú al usuario
+        #  Mostramos el menú al usuario
         for i, opcion in enumerate(opciones_menu, start=1):
             prov = opcion["proveedor"].upper()
             nombre = opcion["id_modelo"]
@@ -76,20 +77,18 @@ class CLIModelTester:
 
         print("\n  Arrancando motores de IA...")
         try:
-            # 3. Inyectamos las dependencias en el ModelManager [cite: 1, 2]
-            # Pasamos proveedor y el nombre de la clave para que el Factory busque en el JSON
-            manager = ModelManager(vlm_provider, vlm_model_name)
-            vlm_model, strategy = manager.load_vlm()
+            selected_process_stry = "batch_strategy"
 
-            # 4. Orquestación del Pipeline [cite: 223, 406]
-            pipeline = VLMPipeline(vlm_model, vlm_provider, strategy) 
+            vlm_model, msg_strategy = ModelFactory().load_vlm(vlm_provider, vlm_model_name)
+            process_strategy = ProcessingFactory().create_strategy(selected_process_stry)
+            pipeline = VLMPipeline(vlm_model, vlm_provider, msg_strategy, process_strategy) 
             
-            # El procesamiento asíncrono es un requisito no funcional (RNF-04) [cite: 508]
+
             await pipeline.process_video(ruta_video, user_prompt)
             print("\n  Prueba finalizada con éxito. Revisa la carpeta de proyectos.")
         
         except Exception as e:
-            # Captura de errores para evitar cierres inesperados (RF-11) [cite: 501, 503]
+            # Captura de errores para evitar cierres inesperados
             print(f"  [CRÍTICO] Error en la ejecución del pipeline: {e}")
             import traceback
             traceback.print_exc()
@@ -97,7 +96,7 @@ class CLIModelTester:
 if __name__ == "__main__":
     tester = CLIModelTester()
     
-    # Parámetros definidos en la fase de análisis (Sprint 1) [cite: 300, 311]
+    # Parámetros definidos en la fase de análisis 
     VIDEO_DE_PRUEBA = "video_perro_prueba.mp4" 
     PROMPT_DE_PRUEBA = "Dime si ves un perro en la imagen"
     

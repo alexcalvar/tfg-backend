@@ -3,7 +3,7 @@ import asyncio
 from dotenv import load_dotenv
 
 from src.core.pipeline import VLMPipeline
-from src.core.model_manager import ModelManager
+from core.model_factory import ModelManager
 from src.utils.file_utils import load_json
 from src.data.dataset_loader import DatasetLoader
 from src.evaluation.benchmark_runner import BenchmarkRunner
