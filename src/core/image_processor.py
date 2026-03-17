@@ -5,7 +5,7 @@ import os
 
 from langchain_core.language_models.chat_models import BaseChatModel
 
-from core.message_strategies.message_builders import MessageBuilderStrategy
+from src.core.message_strategies.message_builders import MessageBuilderStrategy
 
 from src.data.validators import VideoFrame, FramesPath
 

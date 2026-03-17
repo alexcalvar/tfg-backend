@@ -23,13 +23,44 @@ class TemporalStrategy(ProcessingStrategy):
         return system_prompt, task_template
 
 
-    async def procesar_lote(self, processor: VLMProcessor, prompt_usuario: str, lote: list[FramesPath], cola: asyncio.Queue, 
+    async def procesar_cola(self, processor: VLMProcessor, prompt_usuario: str, lote: list[FramesPath], cola: asyncio.Queue, 
                             resultados: list):
-        pass
+        try:
+
+            respuesta_temporal = await asyncio.to_thread(processor.analyze_frame, prompt_usuario, lote)
+
+            if isinstance(respuesta_temporal, dict) and "resultados" in respuesta_temporal:
+                respuesta_temporal = respuesta_temporal["resultados"]
+
+            if isinstance(respuesta_temporal, list) and len(respuesta_temporal) == 1:
+                await self._evaluar_frame_temporal(respuesta_temporal, resultados, cola)
+            else:
+                await self._gestionar_fallo_lote(lote, resultados, cola, "El modelo no devolvió una lista coherente.")
+
+        except Exception as e: 
+            print(f" Error analizando el lote: {e}")
+            await self._gestionar_fallo_lote(lote, resultados, cola, f"Error de sistema/conexión: {e}")
 
 
-    async def _evaluar_frame_individual(self, frame_obj: FramesPath, respuesta_dict: dict, resultados: list, cola: asyncio.Queue):
-        pass
+    async def _evaluar_frame_temporal(self, frame_obj: FramesPath, respuesta_dict: dict, resultados: list, cola: asyncio.Queue):
+        MAX_INTENTOS = self.config.get_video_int("max_intents_frame")
+
+        if isinstance(respuesta_dict, dict) and "detectado" in respuesta_dict and "descripcion" in respuesta_dict:
+                
+            respuesta_dict["archivo"] = f"frame_{frame_obj.frame_id}.jpg"
+            resultados.append(respuesta_dict)
+            print(f" Terminado: frame_{frame_obj.frame_id}")
+        
+        else:
+            intentos_restantes = frame_obj.intentos - 1
+            if intentos_restantes <= 0:
+                resultados.append({
+                    "detectado": False,
+                    "descripcion": f"Error: JSON inválido tras {MAX_INTENTOS} intentos.",
+                    "archivo": f"frame_{frame_obj.frame_id}.jpg"
+                })
+            else:
+                await cola.put(FramesPath(frame_obj.frame_id, frame_obj.frame_path, intentos_restantes))
 
     async def _gestionar_fallo_lote(self, lote: list[FramesPath], resultados: list, cola: asyncio.Queue, motivo: str):
         pass

@@ -23,14 +23,14 @@ async def analyze_video(
     user_prompt: str = Form(...),
     provider: str = Form(...), 
     model_name: str = Form(...),
-    process_strategy: str = Form(...)
+    processing_mode: str = Form(...)
 ):
     if not video.content_type.startswith("video/"):
         raise HTTPException(status_code=400, detail="El archivo debe ser un formato de vídeo válido.")
 
     try:
         modelo_solicitado, msg_strategy = ModelFactory().load_vlm(provider, model_name)
-        processing_strategy = ProcessingFactory().create_strategy(process_strategy)
+        processing_strategy = ProcessingFactory.create_strategy(processing_mode)
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error al cargar el modelo: {str(e)}")
 

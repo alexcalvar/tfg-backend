@@ -7,9 +7,9 @@ from langchain_openai import ChatOpenAI
 
 from llama_cpp import Llama
 
-from src.core.adapters.llamacpp_adapter import CustomVisionLlamaCpp
+from src.core.model_adapters.llamacpp_adapter import CustomVisionLlamaCpp
 from src.core.message_strategies.message_builders import CloudMessageBuilder,LocalMessageBuilder
-from src.core.adapters.vlm_handler import VLM_HANDLERS
+from src.core.model_adapters.vlm_handler import VLM_HANDLERS
 from src.utils.config_loader import ConfigLoader
 
 from src.utils.file_utils import load_json 

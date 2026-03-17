@@ -11,7 +11,7 @@ from src.utils.config_loader import ConfigLoader
 
 from src.core.image_processor import VLMProcessor
 
-from src.data.validators import FramesPath
+from src.observer.status_manager import ProjectStatusManager
 
 class VLMPipeline:
 
@@ -28,6 +28,10 @@ class VLMPipeline:
         self.system_prompt, self.task_template = self.processing_strategy.load_prompts()
 
         self._setup_project_directories()
+
+        self.status_manager = ProjectStatusManager(self.base_run_dir)
+        # suscribir al espectador a los eventos 
+        self.processing_strategy.attach(self.status_manager)
 
         self.processor = VLMProcessor(self.vlm, self.message_strategy, self.system_prompt, self.task_template)
 
@@ -66,10 +70,11 @@ class VLMPipeline:
         video_engine = VideoLoader(source_video_path, self.frames_dir)
         interval_time = self.config.get_video_float("frame_interval")
 
-        # cacular total de frames a procesar
+        # cacular total de frames a procesar y pasarselos al observer para q lo sepa
         total_frames = video_engine.get_expected_frame_count(interval_time)
+        self.status_manager.total_frames = total_frames
 
-        self._update_status(ProjectStatus.EXTRACTING, "Iniciando proceso de extracción de frames", 0, total_frames)
+        self.status_manager.update_status(ProjectStatus.EXTRACTING, "Iniciando proceso de extracción de frames",0)
 
         cola_frames = asyncio.Queue()
         
@@ -77,7 +82,7 @@ class VLMPipeline:
         productor_task = asyncio.create_task(video_engine.extract_frames(interval_time, cola_frames))
 
         resultados_acumulados = []
-        consumidor_task = asyncio.create_task(self._analizar_frames(cola_frames,total_frames, prompt_usuario, resultados_acumulados))
+        consumidor_task = asyncio.create_task(self._analizar_frames(cola_frames, prompt_usuario, resultados_acumulados))
 
         await productor_task
         
@@ -86,8 +91,6 @@ class VLMPipeline:
         await cola_frames.join() 
 
         consumidor_task.cancel()
-
-        self._update_status(ProjectStatus.COMPLETED, "Análisis finalizado con éxito.", total_frames, total_frames)
 
         try:
             #ordenar los frmaes del json
@@ -100,7 +103,7 @@ class VLMPipeline:
         save_json(resultados_acumulados, results_file_path)
         print(f" Informe guardado en: {self.results_dir}")
 
-        self._update_status(ProjectStatus.COMPLETED, "Análisis finalizado con éxito.", total_frames, total_frames)
+        self.status_manager.update_status(ProjectStatus.COMPLETED, "Análisis finalizado con éxito.", total_frames)
 
 
 
@@ -132,70 +135,9 @@ class VLMPipeline:
 
 
 
-    async def _analizar_frames(self, cola_frames: asyncio.Queue, total_frames: int, prompt_usuario: str, resultados: list):
-        
-        FRAMES_PER_BATCH = self.config.get_video_int("frames_per_batch")
-        flag = True
+    async def _analizar_frames(self, cola_frames: asyncio.Queue, prompt_usuario: str, resultados: list):
 
-        while flag:
-            frames_to_analyze = await self._extraer_lote_seguro(cola_frames, FRAMES_PER_BATCH)
+        print("Delegando consumo de la cola a la estrategia de procesamiento ...")
+        await self.processing_strategy.procesar_cola(self.processor,prompt_usuario, cola_frames, resultados)
 
-            if not frames_to_analyze: 
-                print("Fin de la extracción detectado. Cerrando procesador.")
-                break      
-
-            if len(frames_to_analyze) < FRAMES_PER_BATCH :
-                print("Iniciando proceso de ultimo batch (tamaño de este inferior al general)")
-                flag = False
-                
-            ultimo_frame_id = frames_to_analyze[-1].frame_id 
-            self._update_status(ProjectStatus.ANALYZING, f"Analizando lote de {len(frames_to_analyze)} frames...", ultimo_frame_id, total_frames)
-
-            await self.processing_strategy.procesar_lote(self.processor,prompt_usuario, frames_to_analyze, cola_frames, resultados)
-
-            for _ in frames_to_analyze:
-                cola_frames.task_done()
             
-
-
-    async def _extraer_lote_seguro(self, cola: asyncio.Queue, batch_size: int) -> list[FramesPath] :
-        """
-        Extrae un lote de frames de la cola 
-        Retorna una lista de frames
-        """
-        lote = []
-        count_frames = 0
-        lista_vacia = False
-
-        #mientras no se complete el lote ni se llegue al final
-        while count_frames != batch_size and lista_vacia != True: 
-        
-            paquete = await cola.get() #extraer frame 
-        
-            if paquete is None: #se llego al final si se encuentra un none
-                cola.task_done()
-                cola.put_nowait(None) # necesario porq se saco de la cola y para detectarlo hay q devolverlo a ella 
-                lista_vacia = True
-                
-            else:
-                lote.append(paquete)
-                count_frames=count_frames+1
-
-        return lote
-
-
-
-    def _update_status(self, state: ProjectStatus, message: str, current_frame: int = 0, total_frames: int = 0):
-        """escribe el estado actual del proceso en el disco en tiempo real."""
-        status_data = {
-            "state": state.value, 
-            "message": message,
-            "progress": {
-                "current_frame": current_frame,
-                "total_frames": total_frames
-            },
-            "last_updated": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        }
-        
-        status_path = os.path.join(self.base_run_dir, "status.json")
-        save_json(status_data, status_path)

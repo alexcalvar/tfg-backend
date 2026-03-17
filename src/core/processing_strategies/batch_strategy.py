@@ -6,6 +6,7 @@ from src.data.validators import FramesPath
 from src.core.processing_strategies.base_strategy import ProcessingStrategy
 
 from src.utils.file_utils import load_json
+from src.utils.project_status import ProjectStatus
 
 class BatchStrategy(ProcessingStrategy):
 
@@ -23,10 +24,66 @@ class BatchStrategy(ProcessingStrategy):
         return system_prompt, task_template
 
 
-    async def procesar_lote(self, processor: VLMProcessor, prompt_usuario: str, lote: list[FramesPath], cola: asyncio.Queue, 
-                            resultados: list):
-        try:
+    async def procesar_cola(self, processor: VLMProcessor, prompt_usuario: str, cola: asyncio.Queue, resultados: list):
+            
+        FRAMES_PER_BATCH = self.config.get_video_int("frames_per_batch")
+        flag = True
 
+        while flag:
+            frames_to_analyze = await self._extraer_lote_seguro(cola, FRAMES_PER_BATCH)
+
+            if not frames_to_analyze: 
+                print("Fin de la extracción detectado. Cerrando procesador.")
+                break      
+
+            if len(frames_to_analyze) < FRAMES_PER_BATCH :
+                print("Iniciando proceso de ultimo batch (tamaño de este inferior al general)")
+                flag = False
+
+            ultimo_frame_id = frames_to_analyze[-1].frame_id 
+            self.notify(ProjectStatus.ANALYZING, "Analizando...", ultimo_frame_id)
+
+            await self._procesar_lote_interno(processor, prompt_usuario, frames_to_analyze, cola, resultados)
+
+            # marcar las tareas como hechas 
+            for _ in frames_to_analyze:
+                cola.task_done()
+
+
+
+
+    async def _extraer_lote_seguro(self, cola: asyncio.Queue, batch_size: int) -> list[FramesPath] :
+        """
+        Extrae un lote de frames de la cola 
+        Retorna una lista de frames
+        """
+        lote = []
+        count_frames = 0
+        lista_vacia = False
+
+        #mientras no se complete el lote ni se llegue al final
+        while count_frames != batch_size and lista_vacia != True: 
+        
+            paquete = await cola.get() #extraer frame 
+        
+            if paquete is None: #se llego al final si se encuentra un none
+                cola.task_done()
+                cola.put_nowait(None) # necesario porq se saco de la cola y para detectarlo hay q devolverlo a ella 
+                lista_vacia = True
+                
+            else:
+                lote.append(paquete)
+                count_frames=count_frames+1
+
+        return lote
+
+
+
+
+    async def _procesar_lote_interno(self, processor : VLMProcessor, prompt_usuario : str,  lote: list[FramesPath], cola : asyncio.Queue,
+                                      resultados : list):
+        try:
+            
             respuestas_lote = await asyncio.to_thread(processor.analyze_frame, prompt_usuario, lote)
 
             if isinstance(respuestas_lote, dict) and "resultados" in respuestas_lote:
@@ -41,8 +98,10 @@ class BatchStrategy(ProcessingStrategy):
         except Exception as e: 
             print(f" Error analizando el lote: {e}")
             await self._gestionar_fallo_lote(lote, resultados, cola, f"Error de sistema/conexión: {e}")
+        
 
 
+    
     async def _evaluar_frame_individual(self, frame_obj: FramesPath, respuesta_dict: dict, resultados: list, cola: asyncio.Queue):
         MAX_INTENTOS = self.config.get_video_int("max_intents_frame")
 
@@ -72,4 +131,4 @@ class BatchStrategy(ProcessingStrategy):
             if intentos_restantes > 0:
                 await cola.put(FramesPath(frame_obj.frame_id, frame_obj.frame_path, intentos_restantes))
             else:
-                resultados.append({"detectado": False, "descripcion": f"Error Crítico: {motivo}", "archivo": f"frame_{frame_obj.frame_id}.jpg"})
+                resultados.append({"detectado": False, "descripcion": f"Error Crítico: {motivo}", "archivo": f"frame_{frame_obj.frame_id}.jpg"})    
