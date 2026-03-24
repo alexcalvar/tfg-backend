@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 import asyncio
 
 from src.core.image_processor import VLMProcessor
@@ -12,10 +12,10 @@ class ProcessingStrategy(StatusObservable):
     """
     
     def __init__(self):
-        # Inicializa la lista de observadores
+        # inicializa la lista de observadores
         StatusObservable.__init__(self) 
         
-        #  Inicializa la configuración compartida
+        #  inicializa la configuración compartida
         self.config = ConfigLoader()
 
     @abstractmethod
@@ -24,6 +24,6 @@ class ProcessingStrategy(StatusObservable):
         pass
 
     @abstractmethod
-    async def procesar_cola(self, processor: VLMProcessor, prompt_usuario: str, cola: asyncio.Queue, resultados: list):
+    async def procesar_cola(self, processor: VLMProcessor, prompt_usuario: str, cola: asyncio.Queue, resultados: list) -> None:
         """Consume la cola de frames y procesa según la lógica de la estrategia."""
         pass

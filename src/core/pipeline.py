@@ -3,19 +3,21 @@ import time
 import asyncio
 import datetime
 
+from src.data.validators import FrameResults
 from src.core.processing_strategies.base_strategy import ProcessingStrategy
-from src.utils.file_utils import ensure_dir, save_json
+from src.utils.file_utils import ensure_dir, save_json, save_results
 from src.utils.project_status import ProjectStatus
 from src.utils.video_utils import VideoLoader
 from src.utils.config_loader import ConfigLoader
 
 from src.core.image_processor import VLMProcessor
+from src.core.temporal_normalizer import TemporalNormalizer
 
 from src.observer.status_manager import ProjectStatusManager
 
 class VLMPipeline:
 
-    def __init__(self, model_instance, provider_name, message_strategy, processing_strategy: ProcessingStrategy):
+    def __init__(self, model_instance, provider_name, message_strategy, processing_strategy: ProcessingStrategy, temporal_normalizer : TemporalNormalizer):
         
         self.config = ConfigLoader()
         self.vlm = model_instance
@@ -34,6 +36,7 @@ class VLMPipeline:
         self.processing_strategy.attach(self.status_manager)
 
         self.processor = VLMProcessor(self.vlm, self.message_strategy, self.system_prompt, self.task_template)
+        self.normalizer = temporal_normalizer
 
 
 
@@ -81,10 +84,13 @@ class VLMPipeline:
         print("Extracción de frames ...")
         productor_task = asyncio.create_task(video_engine.extract_frames(interval_time, cola_frames))
 
-        resultados_acumulados = []
+        resultados_acumulados : list[FrameResults] = []
         consumidor_task = asyncio.create_task(self._analizar_frames(cola_frames, prompt_usuario, resultados_acumulados))
 
         await productor_task
+
+        # Orquestador avisa manualmente a la cola de que no hay más frames
+        cola_frames.put_nowait(None)
         
         self._save_execution_config(file_name, prompt_usuario, total_frames)
 
@@ -94,14 +100,23 @@ class VLMPipeline:
 
         try:
             #ordenar los frmaes del json
-            resultados_acumulados.sort(key=lambda x: int(x["archivo"].split('_')[1].split('.')[0]))
+            resultados_acumulados.sort(key=lambda x: x.frame_id)
         except Exception:
             # en caso de error devolver el archivo sin modificar
             pass 
        
+       
+
         results_file_path = os.path.join(self.results_dir, "report.json")
-        save_json(resultados_acumulados, results_file_path)
+        save_results(resultados_acumulados, results_file_path)
         print(f" Informe guardado en: {self.results_dir}")
+
+        #normalizar los resultados
+        eventos_definidos = self.normalizer.process_and_group(resultados_acumulados)
+
+        events_file_path = os.path.join(self.results_dir, "intervalos.json")
+        save_results(eventos_definidos, events_file_path)
+        print(f" Intervalos guardados en: {self.results_dir}")
 
         self.status_manager.update_status(ProjectStatus.COMPLETED, "Análisis finalizado con éxito.", total_frames)
 

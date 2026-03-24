@@ -17,7 +17,7 @@ class VLMProcessor:
         self.task_template = task_template 
 
 
-    def  analyze_frame( self,user_prompt, images_path : list[FramesPath]):
+    def analyze_frame(self,user_prompt, images_path : list[FramesPath]):
         
         list_frames : list[VideoFrame] = []
 

@@ -1,0 +1,32 @@
+[
+    {
+        "detectado": true,
+        "descripcion": "Se observa un perro marrón y negro caminando por el sendero forestal cubierto de hojas",
+        "archivo": "frame_0.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Se observa un perro en el centro del sendero entre hojas caídas.",
+        "archivo": "frame_1.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Se observa un perro en el centro de la imagen, sobre un sendero cubierto de hojas.",
+        "archivo": "frame_2.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Se observa un perro en la imagen",
+        "archivo": "frame_3.jpg"
+    },
+    {
+        "detectado": true,
+        "descripcion": "Se observa un perro de raza pastor alemán en un bosque con hojas caídas.",
+        "archivo": "frame_4.jpg"
+    },
+    {
+        "detectado": false,
+        "descripcion": "No se observa un perro en la imagen; se muestra un paisaje forestal con hojas caídas, vegetación y troncos en el suelo.",
+        "archivo": "frame_5.jpg"
+    }
+]

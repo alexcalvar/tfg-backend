@@ -117,7 +117,7 @@ async def get_project_results(project_id: str):
         )
     
 
-@endpoints.get("/api/v1/providers", response_model=HTTPResponse, status_code=200) #como tal lo q pude ser util ver los proveedores porq los modelos unicamente hay q introducir el nombre 
+@endpoints.get("/api/v1/providers", response_model=HTTPResponse, status_code=200) 
 async def list_available_models():
     """Lee el models_config.json y devuelve los modelos VLM que la API puede usar."""
     

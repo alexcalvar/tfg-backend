@@ -55,7 +55,8 @@ class LocalMessageBuilder(MessageBuilderStrategy):
         for frame in images_b64:
             human_content.append({"type": "text", "text": f"Frame {frame.frame_id}:"})
             human_content.append({
-                "type": "image_url", "image_url": {"url": self._format_base64_url(frame.img_b64)}
+                "type": "image_url", 
+                "image_url": {"url": self._format_base64_url(frame.img_b64)}
             })
         
         return [HumanMessage(content=human_content)]

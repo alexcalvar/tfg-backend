@@ -2,7 +2,7 @@ import asyncio
 import os
 
 from src.core.image_processor import VLMProcessor
-from src.data.validators import FramesPath
+from src.data.validators import FrameResults, FramesPath
 from src.core.processing_strategies.base_strategy import ProcessingStrategy
 
 from src.utils.file_utils import load_json
@@ -17,7 +17,7 @@ class BatchStrategy(ProcessingStrategy):
         prompts_path = os.path.join(self.config.get_path("config_folder"), "prompts.json")
         config_prompts = load_json(prompts_path)
         categoria_prompts = self.config.get_sys_config("selected_vlm_prompts_list")
-        sys_prompt_key = self.config.get_sys_config("selected_sys_prompt")
+        sys_prompt_key = self.config.get_sys_config("batch_sys_prompt")
         
         system_prompt = config_prompts[categoria_prompts][sys_prompt_key]["system_instruction"]
         task_template = config_prompts[categoria_prompts][sys_prompt_key]["task_template"]
@@ -54,26 +54,26 @@ class BatchStrategy(ProcessingStrategy):
 
     async def _extraer_lote_seguro(self, cola: asyncio.Queue, batch_size: int) -> list[FramesPath] :
         """
-        Extrae un lote de frames de la cola 
-        Retorna una lista de frames
+        Extrae un lote gestionando correctamente el None y los reintentos.
         """
         lote = []
-        count_frames = 0
-        lista_vacia = False
 
-        #mientras no se complete el lote ni se llegue al final
-        while count_frames != batch_size and lista_vacia != True: 
+        while len(lote) < batch_size: 
+            # await espera de forma inteligente a que el extractor envíe el frame o el None
+            paquete = await cola.get() 
         
-            paquete = await cola.get() #extraer frame 
-        
-            if paquete is None: #se llego al final si se encuentra un none
+            if paquete is None: 
                 cola.task_done()
-                cola.put_nowait(None) # necesario porq se saco de la cola y para detectarlo hay q devolverlo a ella 
-                lista_vacia = True
                 
+                # ¿Es el final real o hay un reintento rezagado?
+                if cola.empty():
+                    cola.put_nowait(None) 
+                    break
+                else:
+                    cola.put_nowait(None)
+                    await asyncio.sleep(0.1) 
             else:
                 lote.append(paquete)
-                count_frames=count_frames+1
 
         return lote
 
@@ -105,24 +105,53 @@ class BatchStrategy(ProcessingStrategy):
     async def _evaluar_frame_individual(self, frame_obj: FramesPath, respuesta_dict: dict, resultados: list, cola: asyncio.Queue):
         MAX_INTENTOS = self.config.get_video_int("max_intents_frame")
 
-        if isinstance(respuesta_dict, dict) and "detectado" in respuesta_dict and "descripcion" in respuesta_dict:
+        if self._respuesta_valida(respuesta_dict):
+            detectado_limpio = self._normalizar_detectado(respuesta_dict["detectado"])
             
-            if isinstance(respuesta_dict["detectado"], str):
-                respuesta_dict["detectado"] = respuesta_dict["detectado"].strip().lower() == "true"
-                
-            respuesta_dict["archivo"] = f"frame_{frame_obj.frame_id}.jpg"
-            resultados.append(respuesta_dict)
+            frame_result = FrameResults(
+                frame_id=frame_obj.frame_id, 
+                detectado=detectado_limpio,
+                descripcion=respuesta_dict["descripcion"]
+            )
+
+            resultados.append(frame_result) 
             print(f" Terminado: frame_{frame_obj.frame_id}")
+            return
+
+        intentos_restantes = frame_obj.intentos - 1
+
+        if intentos_restantes <= 0:
+            resultados.append(
+                self._crear_resultado(
+                    frame_obj.frame_id,
+                    False,
+                    f"Error: JSON inválido tras {MAX_INTENTOS} intentos."
+                )
+            )
         else:
-            intentos_restantes = frame_obj.intentos - 1
-            if intentos_restantes <= 0:
-                resultados.append({
-                    "detectado": False,
-                    "descripcion": f"Error: JSON inválido tras {MAX_INTENTOS} intentos.",
-                    "archivo": f"frame_{frame_obj.frame_id}.jpg"
-                })
-            else:
-                await cola.put(FramesPath(frame_obj.frame_id, frame_obj.frame_path, intentos_restantes))
+            await cola.put(FramesPath(frame_obj.frame_id, frame_obj.frame_path, intentos_restantes))
+
+    @staticmethod
+    def _normalizar_detectado(valor):
+        if isinstance(valor, str):
+            return valor.strip().lower() == "true"
+        return valor
+
+    @staticmethod
+    def _respuesta_valida(respuesta_dict):
+        return (
+            isinstance(respuesta_dict, dict) and
+            "detectado" in respuesta_dict and
+            "descripcion" in respuesta_dict
+        )
+
+    @staticmethod
+    def _crear_resultado(frame_id, detectado, descripcion):
+        return FrameResults(
+                frame_id=frame_id, 
+                detectado=detectado,
+                descripcion=descripcion
+            )
 
     async def _gestionar_fallo_lote(self, lote: list[FramesPath], resultados: list, cola: asyncio.Queue, motivo: str):
         print(f" [ALERTA] Salvando lote debido a: {motivo}")
@@ -131,4 +160,4 @@ class BatchStrategy(ProcessingStrategy):
             if intentos_restantes > 0:
                 await cola.put(FramesPath(frame_obj.frame_id, frame_obj.frame_path, intentos_restantes))
             else:
-                resultados.append({"detectado": False, "descripcion": f"Error Crítico: {motivo}", "archivo": f"frame_{frame_obj.frame_id}.jpg"})    
+                resultados.append(self._crear_resultado(frame_id=frame_obj.frame_id,detectado=False,descripcion=f"Error Crítico: {motivo}"))    

@@ -7,7 +7,7 @@ class CustomVisionLlamaCpp(BaseChatModel):
     """
     Adaptador personalizado para permitir a LangChain comunicarse con modelos multimodales locales de llama-cpp-python.
     """
-    # Guardamos la instancia del modelo (en esta intancia se almacena el archivo del modelo con el archivo que lo dota de capacidad vsiual)
+    # guardamos la instancia del modelo (en esta intancia se almacena el archivo del modelo con el archivo que lo dota de capacidad vsiual)
     cliente_nativo: Any 
     
     # instrucción para pydantic, de esta forma permite tipos externos como Llama y evitar q lance error de validación al intentar instanciar el adaptador
@@ -21,19 +21,10 @@ class CustomVisionLlamaCpp(BaseChatModel):
         return "custom_vision_llamacpp"
 
     #se define el nuevo metodo _generate porque es el metodo interno q langchain llama cuanod se realiza un .invoke()
-    def _generate(
-        self,
-        messages: List[BaseMessage],
-        stop: Optional[List[str]] = None,
-        **kwargs: Any,
-    ) -> ChatResult:
-        """
-        El corazón del adaptador. Aquí ocurre la magia de la traducción.
-        """
+    def _generate(self,messages: List[BaseMessage],stop: Optional[List[str]] = None,**kwargs: Any) -> ChatResult:
         # --- LÓGICA DE TRADUCCIÓN ---
         # convertir 'messages' de formato langchain a formato llamacpp
         mensajes_llama = []
-
 
         for mensaje in messages:
             #  identificar la clase del objeto en la lista de mensajes para poder asignar el rol correspondiente 
@@ -64,7 +55,7 @@ class CustomVisionLlamaCpp(BaseChatModel):
 
         model_response = respuesta_cruda["choices"][0]["message"]["content"]
 
-        #transformas el string de texto en un objeto de tipo mensaje de IA
+        #se transforma el string de texto en un objeto de tipo mensaje de IA
         # importante porque LangChain diferencia entre lo que dice el humano (HumanMessage) y lo que responde la IA
 
         # envolver el mensaje en una capa de generacion, langchain usa esta clase para añadir información adicional si fuera necesario, 

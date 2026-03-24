@@ -24,6 +24,17 @@ def save_json(data: list | dict, file_path: str):
     with open(file_path, "w", encoding="utf-8") as file:
         json.dump(data, file, indent=4, ensure_ascii=False)
 
+def save_results(data_models: list, file_path: str):
+    """
+    Convierte una lista de objetos de dominio (Pydantic) a diccionarios
+    y utiliza save_json para almacenarlos en disco.
+    """
+    # Extraemos los datos crudos usando model_dump() (o dict() si es Pydantic V1)
+    datos_dict = [item.model_dump() for item in data_models]
+    
+    # Reutilizamos la función base para no duplicar la lógica de guardado
+    save_json(datos_dict, file_path)
+
 def encode_image_base64(image_path: str) -> str:
     """lee una imagen del disco y la convierte a cadena base64."""
     if not os.path.exists(image_path):

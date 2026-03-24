@@ -1,0 +1,9 @@
+{
+    "state": "analyzing_frames",
+    "message": "Analizando...",
+    "progress": {
+        "current_frame": 5,
+        "total_frames": 6
+    },
+    "last_updated": "2026-03-19 17:07:44"
+}
