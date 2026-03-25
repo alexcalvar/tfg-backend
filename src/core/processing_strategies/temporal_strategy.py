@@ -2,76 +2,70 @@ import asyncio
 import os
 
 from src.core.image_processor import VLMProcessor
-from src.data.validators import FramesPath
+from src.data.validators import FramesPath, FrameResults
 from src.core.processing_strategies.base_strategy import ProcessingStrategy
+
+from src.core.output_parsers.base_parser import BaseFrameParser
 
 from src.utils.file_utils import load_json
 from src.utils.project_status import ProjectStatus
 
 class TemporalStrategy(ProcessingStrategy):
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parser : BaseFrameParser):
+        super().__init__(parser)
 
-    def load_prompts(self ) -> tuple[str, str]:
+    def load_prompts(self) -> tuple[str, str]:
         prompts_path = os.path.join(self.config.get_path("config_folder"), "prompts.json")
         config_prompts = load_json(prompts_path)
         categoria_prompts = self.config.get_sys_config("selected_vlm_prompts_list")
         sys_prompt_key = self.config.get_sys_config("temporal_sys_prompt")
         
-        system_prompt = config_prompts[categoria_prompts][sys_prompt_key]["system_instruction"]
+        base_system_prompt = config_prompts[categoria_prompts][sys_prompt_key]["system_instruction"]
         task_template = config_prompts[categoria_prompts][sys_prompt_key]["task_template"]
-        return system_prompt, task_template
+        
+        # añadri intrucciones especificas del parser correspondiente al prompt
+        instrucciones_formato = self.parser.get_format_instructions()
+        system_prompt_final = f"{base_system_prompt}\n\n{instrucciones_formato}"
+        
+        return system_prompt_final, task_template
 
 
     async def procesar_cola(self, processor: VLMProcessor, prompt_usuario: str, cola: asyncio.Queue, resultados: list):
+
+        CONTEXTO_INICIAL_FRAMES = 2 # frame actual  y futuro para el primer frame
+        PASO_VENTANA = 1            # avanzamos de 1 en 1 para mantener el solapamiento (t-1, t, t+1) centrandonos en analizar t
+
         try:
-            buffer_frames : list[FramesPath] = []
+            buffer_frames: list[FramesPath] = []
             
-            print(" [DEBUG] Iniciando Fase 1 (Extracción inicial)...")
-            primera_extraccion = await self._extraer_lote(cola, 2)
+            # --- FASE 1: INICIO ---
+            primera_extraccion = await self._extraer_lote(cola, CONTEXTO_INICIAL_FRAMES)
             if not primera_extraccion:
-                print(" [DEBUG] Extracción inicial vacía. Finalizando.")
                 return
                 
             buffer_frames.extend(primera_extraccion)
-
-            # --- FASE 1: INICIO ---
-            frame_objetivo = buffer_frames[0]
-            self.notify(ProjectStatus.ANALYZING, "Analizando inicio...", frame_objetivo.frame_id)
-            print(f" [DEBUG] Llamando a procesar Fase 1 para frame_{frame_objetivo.frame_id}...")
-            await self._procesar_lote_interno(processor, prompt_usuario, buffer_frames, frame_objetivo, resultados)
-            cola.task_done()
+            await self._evaluar_ventana(processor, prompt_usuario, buffer_frames, 0, "Analizando inicio...", cola, resultados)
 
             # --- FASE 2: MEDIO ---
-            print(" [DEBUG] Entrando a la Fase 2 (Bucle)...")
             while True:
-                frame_to_analyze = await self._extraer_lote(cola, 1)
-                
+                frame_to_analyze = await self._extraer_lote(cola, PASO_VENTANA)
                 if not frame_to_analyze: 
-                    print(" [DEBUG] Bucle roto correctamente.")
                     break      
 
                 buffer_frames.extend(frame_to_analyze) 
-                frame_objetivo = buffer_frames[1] 
-                self.notify(ProjectStatus.ANALYZING, "Analizando ventana...", frame_objetivo.frame_id)
-                print(f" [DEBUG] Llamando a procesar Fase 2 para frame_{frame_objetivo.frame_id}...")
-                await self._procesar_lote_interno(processor, prompt_usuario, buffer_frames, frame_objetivo, resultados)
-
-                cola.task_done()
-                buffer_frames.pop(0)
+                
+                # El frame objetivo es el del medio (índice 1)
+                await self._evaluar_ventana(processor, prompt_usuario, buffer_frames, 1, "Analizando ventana...", cola, resultados)
+                
+                buffer_frames.pop(0) # Avanzamos la ventana
 
             # --- FASE 3: FINAL ---
-            print(" [DEBUG] Entrando a la Fase 3 (Evaluación Final)...")
             if len(buffer_frames) > 1:
-                frame_objetivo = buffer_frames[-1] 
-                self.notify(ProjectStatus.ANALYZING, "Analizando final...", frame_objetivo.frame_id)
-                print(f" [DEBUG] Llamando a procesar Fase 3 para frame_{frame_objetivo.frame_id}...")
-                await self._procesar_lote_interno(processor, prompt_usuario, buffer_frames, frame_objetivo, resultados)
-                cola.task_done()
+                # El frame objetivo es el último (índice -1)
+                await self._evaluar_ventana(processor, prompt_usuario, buffer_frames, -1, "Analizando final...", cola, resultados)
                 
-            cola.task_done() # Marcamos el None
-            print(" [DEBUG] ¡Estrategia terminada y cola liberada con éxito!")
+            cola.task_done() # Marcamos el None final del bucle
 
         except Exception as e:
             # ¡EL CAZADOR DE ERRORES SILENCIOSOS!
@@ -90,18 +84,37 @@ class TemporalStrategy(ProcessingStrategy):
                     pass
             cola.task_done() # Para asegurar
 
+    async def _evaluar_ventana(self, processor: VLMProcessor, prompt_usuario: str, 
+                               buffer_frames: list[FramesPath], target_index: int, 
+                               mensaje_estado: str, cola: asyncio.Queue, resultados: list):
+        """Método auxiliar genérico para evaluar una ventana de frames y notificar el progreso."""
+        
+        frame_objetivo = buffer_frames[target_index] 
+        self.notify(ProjectStatus.ANALYZING, mensaje_estado, frame_objetivo.frame_id)
+        
+        print(f" [DEBUG] {mensaje_estado} (frame_{frame_objetivo.frame_id})")
+        
+        await self._procesar_lote_interno(processor, prompt_usuario, buffer_frames, frame_objetivo, resultados)
+        cola.task_done()
 
     async def _extraer_lote(self, cola: asyncio.Queue, batch_size: int) -> list[FramesPath]:
         lote = []
         while len(lote) < batch_size: 
-            print(" [DEBUG] Esperando paquete de la cola...")
+            # print(" [DEBUG] Esperando paquete de la cola...")
             paquete = await cola.get() 
 
             if paquete is None:
                 print(" [DEBUG] ¡None recibido! El vídeo ha terminado.")
-                return []
+                # Volvemos a meter el None para no romper el join() del orquestador
+                # y para que otros bucles sepan que se acabó
+                cola.task_done()
 
-            print(f" [DEBUG] Extraído frame_{paquete.frame_id}")
+                cola.put_nowait(None) 
+                
+                # Salimos del bucle devolviendo lo que hayamos logrado recolectar
+                break
+
+            # print(f" [DEBUG] Extraído frame_{paquete.frame_id}")
             lote.append(paquete)
 
         return lote
@@ -111,11 +124,16 @@ class TemporalStrategy(ProcessingStrategy):
         """Coordina el envío de la ventana temporal al modelo gestionando los reintentos síncronos."""
         max_intentos = self.config.get_video_int("max_intents_frame")
         
-
         for intento in range(1, max_intentos + 1):
             try:
-                respuesta_bruta = await asyncio.to_thread(processor.analyze_frame, prompt_usuario, buffer_frames)
-                respuesta_validada = self._normalizar_respuesta(respuesta_bruta, frame_objetivo.frame_id)
+                # 1. Construimos el layout con la ventana cronológica
+                layout_mensaje = self._build_model_request(prompt_usuario, buffer_frames)
+                
+                # 2. El procesador solo recibe el layout
+                respuesta_bruta = await asyncio.to_thread(processor.analyze_frame, layout_mensaje)
+                
+                # 3. ¡El Parser inyectado hace la magia!
+                respuesta_validada = self.parser.parse(respuesta_bruta, frame_objetivo.frame_id)
 
                 resultados.append(respuesta_validada)
                 print(f" Terminado análisis temporal para frame_{frame_objetivo.frame_id}")
@@ -128,36 +146,19 @@ class TemporalStrategy(ProcessingStrategy):
                     resultados.append(self._generar_error_fallback(frame_objetivo.frame_id, max_intentos, str(e)))
 
 
-    def _normalizar_respuesta(self, respuesta: any, frame_id: int) -> dict:
-        """Desempaqueta, valida el esquema JSON y estandariza los tipos de datos."""
+    def _build_model_request(self, prompt_usuario: str, buffer_frames: list[FramesPath]) -> list[dict]:
+        """Construye el layout Data-Driven para la petición temporal."""
+        layout_mensaje = [{"type": "text", "content": prompt_usuario}]
         
-        # Desempaquetar si viene dentro de un diccionario "resultados"
-        if isinstance(respuesta, dict) and "resultados" in respuesta:
-            respuesta = respuesta["resultados"]
-
-        # Extraer el primer elemento si el modelo devolvió una lista
-        respuesta_dict = respuesta[0] if (isinstance(respuesta, list) and len(respuesta) > 0) else respuesta
-
-        # Cláusulas de guarda (Fail Fast)
-        if not isinstance(respuesta_dict, dict):
-            raise ValueError(f"El formato no es un diccionario válido. Tipo recibido: {type(respuesta_dict)}")
+        for frame in buffer_frames:
+            layout_mensaje.append({"type": "image", "content": frame})
             
-        if "detectado" not in respuesta_dict or "descripcion" not in respuesta_dict:
-            raise ValueError(f"Faltan claves obligatorias en el JSON. Recibido: {respuesta_dict}")
+        return layout_mensaje
 
-        # Estandarización de datos
-        if isinstance(respuesta_dict["detectado"], str):
-            respuesta_dict["detectado"] = respuesta_dict["detectado"].strip().lower() == "true"
-            
-        respuesta_dict["archivo"] = f"frame_{frame_id}.jpg"
-        
-        return respuesta_dict
-
-
-    def _generar_error_fallback(self, frame_id: int, max_intentos: int, error_msg: str) -> dict:
+   
+    @staticmethod
+    def _generar_error_fallback(frame_id: int, max_intentos: int, error_msg: str) -> FrameResults:
         """Genera un diccionario de error estandarizado cuando fallan todos los intentos."""
-        return {
-            "detectado": False,
-            "descripcion": f"Error: Fallo de análisis temporal tras {max_intentos} intentos. Detalle: {error_msg}",
-            "archivo": f"frame_{frame_id}.jpg"
-        }
+        return FrameResults(frame_id=frame_id, 
+                            detectado=False, 
+                            descripcion=f"Error: Fallo de análisis temporal tras {max_intentos} intentos. Detalle: {error_msg}")

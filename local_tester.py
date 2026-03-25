@@ -3,10 +3,11 @@ import asyncio
 from pathlib import Path
 from dotenv import load_dotenv
 
+from src.data.enums import StrategyType
 from src.core.pipeline import VLMPipeline 
 from src.core.model_factory import ModelFactory
 from src.core.processing_factory import ProcessingFactory
-from src.core.sliding_window import SlidingWindowNormalizer
+from src.core.postprocessing_algorithms.sliding_window import SlidingWindowNormalizer
 from src.utils.file_utils import load_json
 
 class CLIModelTester:
@@ -78,7 +79,7 @@ class CLIModelTester:
 
         print("\n  Arrancando motores de IA...")
         try:
-            selected_process_stry = "batch_strategy"
+            selected_process_stry = StrategyType.TEMPORAL.value
             algoritmo_normalizacion = SlidingWindowNormalizer()
             vlm_model, msg_strategy = ModelFactory().load_vlm(vlm_provider, vlm_model_name)
             process_strategy = ProcessingFactory().create_strategy(selected_process_stry)

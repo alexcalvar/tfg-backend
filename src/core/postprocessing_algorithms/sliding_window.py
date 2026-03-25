@@ -3,7 +3,7 @@ import copy
 from typing import List
 
 from src.data.validators import FrameResults
-from src.core.temporal_normalizer import TemporalNormalizer
+from src.core.postprocessing_algorithms.temporal_normalizer import TemporalNormalizer
 
 class SlidingWindowNormalizer(TemporalNormalizer):
     
@@ -13,7 +13,7 @@ class SlidingWindowNormalizer(TemporalNormalizer):
 
 
     #algoritmo de ejemplo para probar integracion 
-    def _apply_sliding_window(self, results: List[FrameResults]) -> List[FrameResults]:
+    def apply_sliding_window(self, results: List[FrameResults]) -> List[FrameResults]:
         """
         Aplica un filtro estadístico de ventana deslizante por mayoría (moda)
         para eliminar falsos positivos o negativos aislados.

@@ -5,19 +5,21 @@ import datetime
 
 from src.data.validators import FrameResults
 from src.core.processing_strategies.base_strategy import ProcessingStrategy
+from src.core.message_strategies.message_builders import MessageBuilderStrategy
 from src.utils.file_utils import ensure_dir, save_json, save_results
 from src.utils.project_status import ProjectStatus
 from src.utils.video_utils import VideoLoader
 from src.utils.config_loader import ConfigLoader
 
 from src.core.image_processor import VLMProcessor
-from src.core.temporal_normalizer import TemporalNormalizer
+from src.core.postprocessing_algorithms.temporal_normalizer import TemporalNormalizer
 
 from src.observer.status_manager import ProjectStatusManager
 
 class VLMPipeline:
 
-    def __init__(self, model_instance, provider_name, message_strategy, processing_strategy: ProcessingStrategy, temporal_normalizer : TemporalNormalizer):
+    def __init__(self, model_instance, provider_name, message_strategy : MessageBuilderStrategy, 
+                 processing_strategy: ProcessingStrategy, temporal_normalizer : TemporalNormalizer):
         
         self.config = ConfigLoader()
         self.vlm = model_instance
@@ -35,7 +37,7 @@ class VLMPipeline:
         # suscribir al espectador a los eventos 
         self.processing_strategy.attach(self.status_manager)
 
-        self.processor = VLMProcessor(self.vlm, self.message_strategy, self.system_prompt, self.task_template)
+        self.processor = VLMProcessor(self.vlm, self.message_strategy, self.system_prompt)
         self.normalizer = temporal_normalizer
 
 
@@ -112,7 +114,17 @@ class VLMPipeline:
         print(f" Informe guardado en: {self.results_dir}")
 
         #normalizar los resultados
-        eventos_definidos = self.normalizer.process_and_group(resultados_acumulados)
+        #eventos_definidos = self.normalizer.process_and_group(resultados_acumulados)
+
+        #**************************BLOQUE PARA PRUEBAS DEL ALGORITMO*******************#
+        post_normalizacion = self.normalizer.apply_sliding_window(resultados_acumulados)
+
+        normalizacion_file_path = os.path.join(self.results_dir, "postnormalizacion.json")
+        save_results(post_normalizacion, normalizacion_file_path)
+        print(f" Archivo tras aplicar algoritmo guardados en: {self.results_dir}")
+
+        eventos_definidos = self.normalizer.extract_intervals(post_normalizacion)
+        #******************************************************************************#
 
         events_file_path = os.path.join(self.results_dir, "intervalos.json")
         save_results(eventos_definidos, events_file_path)
