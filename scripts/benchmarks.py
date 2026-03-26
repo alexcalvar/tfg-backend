@@ -1,86 +1,153 @@
 import os
 import asyncio
+import pandas as pd
+from datetime import datetime
 from dotenv import load_dotenv
 
+from src.data.enums import StrategyType
 from src.core.pipeline import VLMPipeline
-from src.core.model_manager import ModelManager
-from src.utils.file_utils import load_json
+from src.core.factories.model_factory import ModelFactory
+from src.core.factories.algorithm_factory import AlgorithmFactory
+from src.core.factories.processing_factory import ProcessingFactory
 from src.data.dataset_loader import DatasetLoader
+
+# Importamos tu clase que hace los cálculos matemáticos (Precision, Recall, etc.)
 from src.evaluation.benchmark_runner import BenchmarkRunner
 
-async def main():
-    load_dotenv()
-    print("=== INICIANDO ENTORNO DE EVALUACIÓN (BENCHMARK) ===")
-
-    VIDEO_TEST = "video_perro_prueba.mp4" 
-    
-    DIRECTORIO_RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    GROUND_TRUTH_FILE = os.path.join(DIRECTORIO_RAIZ, "datasets", "benchmarks", "ground_truth.json")
-    RUTAS_MODELOS = os.path.join(DIRECTORIO_RAIZ, "configs", "models_config.json") # Ruta absoluta segura
-    
-    DATASET_FORMAT = "simple_json"
-    USER_PROMPT = "ves un perro en la imagen"
-    
-
-    # --- SELECCIÓN DE MODELO ---
-    config_modelos = load_json(RUTAS_MODELOS)
-    modelos_disponibles = list(config_modelos["vlms"].keys())
-
-    print("\n [1/3] Cargando catálogo de modelos de IA...")
-    for i, clave_modelo in enumerate(modelos_disponibles, start=1):
-        desc = config_modelos["vlms"][clave_modelo].get("model_string", clave_modelo)
-        print(f"  {i} - {desc}")
+class AutomatedBenchmarkSuite:
+    def __init__(self):
+        load_dotenv()
+        self.dataset_loader = DatasetLoader()
         
-    n = input("\nIntroduzca el numero del modelo que desea usar: ")
-    
-    try:
-        indice = int(n) - 1
-        if indice < 0 or indice >= len(modelos_disponibles):
-            raise ValueError()
+        # Configuración de rutas (Ajusta si la estructura de carpetas cambia)
+        self.directorio_raiz = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+        self.gt_file = os.path.join(self.directorio_raiz, "datasets", "benchmarks", "ground_truth.json")
+
+        self.output_dir = os.path.join(self.directorio_raiz, "datasets", "benchmarks", "reports")
+        
+        # Aseguramos que la carpeta de reportes exista
+        os.makedirs(self.output_dir, exist_ok=True)
+        
+        self.resultados_globales = []
+
+    # ==========================================
+    # 1. BATERÍA DE PRUEBAS 
+    # ==========================================
+    def obtener_experimentos(self) -> list[dict]:
+        """Define aquí todas las combinaciones que quieres probar para tu TFG."""
+        return [
+            {
+                "id_experimento": "EXP_01_QWEN_BATCH",
+                "video": "video_perro_prueba.mp4",
+                "prompt": "Dime si ves un perro en la imagen",
+                "proveedor": "ollama",
+                "modelo": "qwen_local",
+                "estrategia": StrategyType.BATCH.value,
+                "apply_alg" : False
+            }
+        ]
+
+    # ==========================================
+    # 2. MOTOR DE EJECUCIÓN AUTÓNOMO
+    # ==========================================
+    async def ejecutar_suite(self):
+        experimentos = self.obtener_experimentos()
+        total = len(experimentos)
+        
+        print("\n" + "="*60)
+        print(f"  INICIANDO SUITE AUTOMATIZADA DE BENCHMARK ({total} pruebas)")
+        print("="*60)
+
+        for i, exp in enumerate(experimentos, start=1):
+            print(f"\n [{i}/{total}] Ejecutando: {exp['id_experimento']}")
+            print(f"   Modelo: {exp['modelo']} | Estrategia: {exp['estrategia']}")
             
-        clave_seleccionada = modelos_disponibles[indice]
-        datos_modelo = config_modelos["vlms"][clave_seleccionada]
+            try:
+                # 1. Fabricamos las dependencias específicas de este experimento
+                algoritmo_normalizacion = AlgorithmFactory().create_algorithm(exp["apply_alg"])
+                vlm_model, msg_strategy = ModelFactory().load_vlm(exp["proveedor"], exp["modelo"])
+                process_strategy = ProcessingFactory().create_strategy(exp["estrategia"])
+                
+                # 2. Ensamblamos el Pipeline
+                pipeline = VLMPipeline(
+                    model_instance=vlm_model,
+                    provider_name=exp["proveedor"],
+                    message_strategy=msg_strategy,
+                    processing_strategy=process_strategy,
+                    temporal_normalizer=algoritmo_normalizacion
+                )
+                
+                # 3. Conectamos el Evaluador y lanzamos
+                # ---validacion de rita ---
+                ruta_video_absoluta = os.path.join(self.directorio_raiz, "datasets", "videos_test", exp["video"])
+                
+                if not os.path.exists(ruta_video_absoluta):
+                    raise FileNotFoundError(f"No se encuentra el archivo de vídeo en: {ruta_video_absoluta}")
+                
+                # 3. Conectamos el Evaluador y lanzamos
+                runner = BenchmarkRunner(self.dataset_loader, pipeline)
+                resultados = await runner.evaluate_video(
+                    video_filename=ruta_video_absoluta,  
+                    prompt=exp["prompt"],
+                    gt_file_path=self.gt_file,
+                    gt_format="simple_json",
+                )
+
+                # 4. Guardamos las métricas en memoria para el CSV
+                metricas = resultados.get("binary_metrics", {})
+                
+                print(f"   ÉXITO -> F1-Score: {metricas.get('f1_score', 0):.4f} | Precisión: {metricas.get('precision', 0):.4f}")
+                
+                self.resultados_globales.append({
+                    "ID_Experimento": exp["id_experimento"],
+                    "Modelo": exp["modelo"],
+                    "Proveedor": exp["proveedor"],
+                    "Estrategia": exp["estrategia"],
+                    "Normalizado": "SÍ" if exp["apply_alg"] else "NO", 
+                    "Video": exp["video"],
+                    "Precision": round(metricas.get("precision", 0), 4),
+                    "Recall": round(metricas.get("recall", 0), 4),
+                    "F1_Score": round(metricas.get("f1_score", 0), 4),
+                    "Estado": "Completado"
+                })
+
+            except Exception as e:
+                # Si un modelo falla (ej. se cuelga Ollama), capturamos el error y pasamos al siguiente
+                print(f"   ERROR CRÍTICO en {exp['id_experimento']}: {e}")
+                self.resultados_globales.append({
+                    "ID_Experimento": exp["id_experimento"],
+                    "Modelo": exp["modelo"],
+                    "Proveedor": exp["proveedor"],
+                    "Estrategia": exp["estrategia"],
+                    "Video": exp["video"],
+                    "Precision": 0, "Recall": 0, "F1_Score": 0,
+                    "Estado": f"Error: {str(e)}"
+                })
+
+        # ==========================================
+        # 3. EXPORTACIÓN DE RESULTADOS
+        # ==========================================
+        self._exportar_informe()
+
+    def _exportar_informe(self):
+        if not self.resultados_globales:
+            print(" [ALERTA] No hay resultados que exportar.")
+            return
+            
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        nombre_archivo = f"benchmark_report_{timestamp}.csv"
+        ruta_reporte = os.path.join(self.output_dir, nombre_archivo)
         
-        vlm_model_name = datos_modelo["model_string"]
-        vlm_provider = datos_modelo["provider"]
-        print(f"\n[INFO] Configuración cargada: {datos_modelo.get('descripcion', vlm_model_name)}")
+        # Usamos Pandas para generar el archivo tabular
+        df = pd.DataFrame(self.resultados_globales)
+        df.to_csv(ruta_reporte, index=False, sep=";") # sep=";" facilita abrirlo en Excel en español
         
-    except (ValueError, IndexError):
-        print(" [ERROR] Selección no válida. Saliendo del sistema...")
-        return
-
-    # --- INICIALIZACIÓN ---
-    try:
-        print(" [2/3] Inicializando Pipeline y Dataset Loader...")
-        # Instanciamos todo pero no ejecutamos el proceso de video manualmente
-        vlm_model, strategy = ModelManager(vlm_provider, vlm_model_name).load_vlm()
-        pipeline = VLMPipeline(vlm_model,vlm_provider, strategy) 
-        dataset_loader = DatasetLoader()
-    except Exception as e:
-        print(f" [ERROR CRÍTICO] Fallo al inicializar el modelo o componentes: {e}") 
-        return # Cortamos la ejecución si algo falla
-
-    # ---  EJECUCIÓN DEL BENCHMARK ---
-    print(" [3/3] Conectando el Benchmark Runner y lanzando evaluación...")
-    runner = BenchmarkRunner( dataset_loader, pipeline)
-
-    try:
-        # El Runner se encarga de llamar al pipeline internamente
-        resultados = await runner.evaluate_video(
-            video_filename=VIDEO_TEST,
-            prompt=USER_PROMPT,
-            gt_file_path=GROUND_TRUTH_FILE,
-            gt_format=DATASET_FORMAT
-        )
-        
-        print("\n=== RESUMEN DE RENDIMIENTO DE LA IA ===")
-        print(f" Precisión (Precision): {resultados['binary_metrics']['precision']}")
-        print(f" Sensibilidad (Recall): {resultados['binary_metrics']['recall']}")
-        print(f" F1-Score:              {resultados['binary_metrics']['f1_score']}")
-        print("=======================================")
-
-    except Exception as e:
-        print(f"\n[ERROR CRÍTICO DURANTE EL BENCHMARK]: {e}")
+        print("\n" + "="*60)
+        print(f"  SUITE FINALIZADA.")
+        print(f"  Reporte consolidado guardado en:\n    {ruta_reporte}")
+        print("="*60)
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    suite = AutomatedBenchmarkSuite()
+    asyncio.run(suite.ejecutar_suite())

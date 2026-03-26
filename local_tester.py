@@ -3,8 +3,11 @@ import asyncio
 from pathlib import Path
 from dotenv import load_dotenv
 
+from src.data.enums import StrategyType
 from src.core.pipeline import VLMPipeline 
-from src.core.model_manager import ModelManager
+from src.core.factories.model_factory import ModelFactory
+from src.core.factories.processing_factory import ProcessingFactory
+from src.core.postprocessing_algorithms.sliding_window import SlidingWindowNormalizer
 from src.utils.file_utils import load_json
 
 class CLIModelTester:
@@ -12,7 +15,6 @@ class CLIModelTester:
     
     def __init__(self):
         load_dotenv()
-        # Usamos Path para mayor robustez en las rutas 
         self.rutas_modelos = Path("configs/models_config.json")
         
         if not self.rutas_modelos.exists():
@@ -21,20 +23,16 @@ class CLIModelTester:
         else:
             self.config_modelos = load_json(str(self.rutas_modelos))
 
-    async def ejecutar_prueba(self, video_name: str, user_prompt: str):
-        """Ejecuta el pipeline interactivo por terminal."""
-        print("\n" + "="*50)
-        print(" INICIANDO MODO DE PRUEBA LOCAL (CLI TFG)")
-        print("="*50)
 
-        ruta_video = os.path.join("datasets", "videos_test", video_name)
-        if not os.path.exists(ruta_video):
-            print(f"  ERROR: No encuentro el vídeo en: {ruta_video}")
-            return
 
-        print("\n Modelos VLM disponibles en la configuración:")
-        
-        # 1. Aplanamos la jerarquía del JSON para que sea seleccionable
+
+    # ==========================================
+    # MÉTODOS PRIVADOS DE MENÚ (CLI)
+    # ==========================================
+
+    def _seleccionar_modelo(self) -> tuple[str, str]:
+        """Muestra el menú de modelos y devuelve el proveedor y nombre seleccionados."""
+        print("\n--- PASO 1: SELECCIÓN DE MODELO VLM ---")
         opciones_menu = []
         vlms_config = self.config_modelos.get("vlms", {})
         
@@ -47,10 +45,8 @@ class CLIModelTester:
                 })
 
         if not opciones_menu:
-            print("  [ERROR] No hay modelos configurados en tu archivo JSON.")
-            return
+            raise ValueError("No hay modelos configurados en tu archivo JSON.")
 
-        # 2. Mostramos el menú al usuario
         for i, opcion in enumerate(opciones_menu, start=1):
             prov = opcion["proveedor"].upper()
             nombre = opcion["id_modelo"]
@@ -62,42 +58,103 @@ class CLIModelTester:
         try:
             indice = int(n) - 1
             if indice < 0 or indice >= len(opciones_menu):
-                raise ValueError()
-                
-            seleccion = opciones_menu[indice]
-            vlm_provider = seleccion["proveedor"]
-            vlm_model_name = seleccion["id_modelo"]
+                raise IndexError()
             
-            print(f"\n [INFO] Seleccionado: {vlm_model_name} vía {vlm_provider}")
+            seleccion = opciones_menu[indice]
+            print(f" [INFO] Modelo seleccionado: {seleccion['id_modelo']} vía {seleccion['proveedor']}")
+            return seleccion["proveedor"], seleccion["id_modelo"]
             
         except (ValueError, IndexError):
-            print("  [ERROR] Selección no válida. Saliendo del sistema...")
+            raise ValueError("Selección de modelo no válida.")
+
+
+
+    def _seleccionar_estrategia(self) -> str:
+        """Muestra el menú de estrategias y devuelve el valor del Enum seleccionado."""
+        print("\n--- PASO 2: SELECCIÓN DE ESTRATEGIA DE PROCESAMIENTO ---")
+        
+        # Extraemos las opciones dinámicamente del Enum
+        opciones_estrategia = list(StrategyType)
+        
+        for i, estrategia in enumerate(opciones_estrategia, start=1):
+            print(f"  {i} - {estrategia.name} ({estrategia.value})")
+            
+        n = input("\n  Introduzca el número de la estrategia que desea usar: ")
+        
+        try:
+            indice = int(n) - 1
+            if indice < 0 or indice >= len(opciones_estrategia):
+                raise IndexError()
+            
+            seleccion = opciones_estrategia[indice]
+            print(f" [INFO] Estrategia seleccionada: {seleccion.name}")
+            return seleccion.value
+            
+        except (ValueError, IndexError):
+            raise ValueError("Selección de estrategia no válida.")
+
+
+
+
+    # ==========================================
+    # FLUJO PRINCIPAL DE EJECUCIÓN
+    # ==========================================
+
+    async def ejecutar_prueba(self, video_name: str, user_prompt: str):
+        """Ejecuta el pipeline interactivo por terminal."""
+        print("\n" + "="*50)
+        print(" INICIANDO MODO DE PRUEBA LOCAL (CLI TFG)")
+        print("="*50)
+
+        ruta_video = os.path.join("datasets", "videos_test", video_name)
+        if not os.path.exists(ruta_video):
+            print(f"  [ERROR] No encuentro el vídeo en: {ruta_video}")
             return
 
-        print("\n  Arrancando motores de IA...")
         try:
-            # 3. Inyectamos las dependencias en el ModelManager [cite: 1, 2]
-            # Pasamos proveedor y el nombre de la clave para que el Factory busque en el JSON
-            manager = ModelManager(vlm_provider, vlm_model_name)
-            vlm_model, strategy = manager.load_vlm()
-
-            # 4. Orquestación del Pipeline [cite: 223, 406]
-            pipeline = VLMPipeline(vlm_model, vlm_provider, strategy) 
+            #  Menús interactivos
+            vlm_provider, vlm_model_name = self._seleccionar_modelo()
+            selected_process_stry = self._seleccionar_estrategia()
             
-            # El procesamiento asíncrono es un requisito no funcional (RNF-04) [cite: 508]
+            #simula la decision del usuario de si quiere o no aplicar el algoritmo
+            apply_alg = False
+            
+            # Ensamblaje de dependencias
+            print("\n  Arrancando motores de IA...")
+            
+            #acordarse de cambiar por el factory
+            algoritmo_normalizacion = SlidingWindowNormalizer(apply_alg)
+            
+            vlm_model, msg_strategy = ModelFactory().load_vlm(vlm_provider, vlm_model_name)
+            process_strategy = ProcessingFactory().create_strategy(selected_process_stry)
+
+            pipeline = VLMPipeline(
+                model_instance=vlm_model, 
+                provider_name=vlm_provider, 
+                message_strategy=msg_strategy, 
+                processing_strategy=process_strategy, 
+                temporal_normalizer=algoritmo_normalizacion
+            ) 
+            
+            
+
+            #  Ejecución del análisis
             await pipeline.process_video(ruta_video, user_prompt)
             print("\n  Prueba finalizada con éxito. Revisa la carpeta de proyectos.")
         
+        except ValueError as ve:
+            print(f"  [CANCELADO] {ve} Saliendo del sistema...")
         except Exception as e:
-            # Captura de errores para evitar cierres inesperados (RF-11) [cite: 501, 503]
             print(f"  [CRÍTICO] Error en la ejecución del pipeline: {e}")
             import traceback
             traceback.print_exc()
 
+
+
 if __name__ == "__main__":
     tester = CLIModelTester()
     
-    # Parámetros definidos en la fase de análisis (Sprint 1) [cite: 300, 311]
+    # Parámetros definidos en la fase de análisis 
     VIDEO_DE_PRUEBA = "video_perro_prueba.mp4" 
     PROMPT_DE_PRUEBA = "Dime si ves un perro en la imagen"
     

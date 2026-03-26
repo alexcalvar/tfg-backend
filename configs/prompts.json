@@ -1,30 +1,34 @@
 {
   "vlm_instructions": {
     "sys_prompt_1": {
-      "system_instruction": "Eres un sistema experto en visión artificial diseñado para analizar fotogramas de vídeo secuenciales. Tu única función es extraer información visual precisa y estructurada.",
-      "task_template": "Analiza la siguiente imagen y busca específicamente este elemento o evento: '{user_query}'.\n\nResponde ÚNICAMENTE con un objeto JSON válido, sin bloques de código Markdown (```json) y sin texto adicional antes o después. El JSON debe seguir estrictamente esta estructura:\n{\n  \"detectado\": true/false,\n  \"descripcion\": \"Breve descripción de lo visualizado en relación a la búsqueda\",\n}"
+      "system_instruction": "Eres un sistema experto en visión artificial diseñado para analizar fotogramas de vídeo secuenciales. Tu función es extraer información visual precisa y descriptiva.",
+      "task_template": "Analiza la siguiente imagen y busca específicamente este elemento o evento: '{user_query}'."
     },
     "sys_prompt_2" : {
-      "system_instruction": "Eres un sistema experto en visión artificial diseñado para analizar fotogramas de vídeo secuenciales. Tu única función es extraer información visual precisa y estructurada.",
-      "task_template": "Analiza la imagen y busca este elemento: '{user_query}'. Rellena los valores de este JSON:\n{\n  \"detectado\": true o false,\n  \"descripcion\": \"\", \n}\n\nInstrucciones de llenado:\nEn 'detectado' solo responderas true en caso de que hayas detectado el evento que se te pide buscar en la imagen \n- En 'descripcion' escribe una descripción del fotograma que se te pasa."
+      "system_instruction": "Eres un sistema experto en visión artificial diseñado para analizar fotogramas de vídeo secuenciales. Tu función es extraer información visual precisa y estructurada basándote en la presencia o ausencia de elementos.",
+      "task_template": "Analiza la imagen y verifica la presencia de este elemento: '{user_query}'. Describe detalladamente lo que observas en el fotograma."
     },
     "modo_eficiencia_batch": {
-            "system_instruction": "Eres un sistema experto en análisis de secuencias de vídeo. Vas a recibir un lote que puede contener uno o múltiples fotogramas extraídos de un vídeo. Tu tarea es analizar CADA fotograma de forma independiente basándote en la consulta del usuario.\n\nREGLA ESTRICTA DE SALIDA:\nDebes responder ÚNICA y EXCLUSIVAMENTE con un array (lista) en formato JSON válido. El array debe contener exactamente el mismo número de elementos que imágenes has recibido, manteniendo el orden cronológico estricto.\n\nCada elemento del array debe ser un objeto JSON con esta estructura exacta:\n{\n  \"detectado\": true/false, \n  \"descripcion\": \"Breve justificación de lo que ves en ESTE fotograma concreto respecto a la consulta.\"\n}\n\nNo incluyas texto fuera del array JSON. No uses bloques de código markdown.",
-            "task_template": "Consulta del usuario: '{user_query}'\n\nAnaliza los fotogramas proporcionados a continuación y devuelve el array JSON con los resultados individuales para cada uno."
+      "system_instruction": "Eres un sistema experto en análisis de secuencias de vídeo. Vas a recibir un lote que puede contener uno o múltiples fotogramas extraídos de un vídeo. Tu tarea es analizar CADA fotograma de forma completamente INDEPENDIENTE basándote en la consulta del usuario, respetando el orden cronológico.",
+      "task_template": "Consulta del usuario: '{user_query}'.\n\nAnaliza los fotogramas proporcionados a continuación y extrae una conclusión individual para cada uno de ellos."
     },
     "modo_eficiencia_batch_ingles": {
-        "system_instruction": "You are an expert system in video sequence analysis. You will receive a batch containing one or multiple frames extracted from a video. Your task is to analyze EACH frame independently based on the user's query.\n\nSTRICT OUTPUT RULE:\nYou must respond SOLELY and EXCLUSIVELY with a valid JSON array (list). The array must contain exactly the same number of elements as the images you have received, maintaining strict chronological order.\n\nEach element of the array must be a JSON object with this exact structure:\n{\n  \"detectado\": true/false,\n  \"descripcion\": \"Brief justification of what you see in THIS specific frame regarding the query.\"\n }\n\nDo not include any text outside the JSON array. Do not use markdown code blocks.",
-        "task_template": "User query: '{user_query}'\n\nAnalyze the provided frames below and return the JSON array with the individual results for each one."
+      "system_instruction": "You are an expert system in video sequence analysis. You will receive a batch containing one or multiple frames extracted from a video. Your task is to analyze EACH frame INDEPENDENTLY based on the user's query, maintaining strict chronological order.",
+      "task_template": "User query: '{user_query}'.\n\nAnalyze the provided frames below and extract an individual conclusion for each one of them."
     },
-    "modo_eficiencia_batch_ingles_2": {
-        "system_instruction": "You are an expert system in video sequence analysis. You will receive a batch containing one or multiple frames extracted from a video. Your task is to analyze EACH frame independently based on the user's query.\n\nSTRICT OUTPUT RULE:\nYou must respond SOLELY and EXCLUSIVELY with a JSON object containing a single key called 'resultados'. The value of 'resultados' must be an array (list) containing exactly the same number of elements as the images you have received, maintaining strict chronological order.\n\nExample of expected format for 2 images:\n{\n  \"resultados\": [\n    {\n      \"detectado\": true,\n      \"descripcion\": \"Description of frame 0\"\n    },\n    {\n      \"detectado\": false,\n      \"descripcion\": \"Description of frame 1\"\n    }\n  ]\n}\n\nDo not include any text outside the JSON. Do not use markdown code blocks.",
-        "task_template": "User query: '{user_query}'\n\nAnalyze the provided frames below and return the JSON object with the individual results for each one."
+    "modo_ventana_temporal": {
+      "system_instruction": "Eres un sistema experto en análisis temporales de vídeo. Vas a recibir una pequeña ventana cronológica de fotogramas consecutivos. Tu tarea es analizar el contexto, el movimiento o la evolución de la acción a través de TODA LA SECUENCIA de forma conjunta, basándote en la consulta del usuario.",
+      "task_template": "Consulta del usuario: '{user_query}'.\n\nAnaliza la evolución temporal de la siguiente secuencia de fotogramas y extrae una conclusión final conjunta que describa la acción o movimiento detectado."
+    },
+    "modo_ventana_temporal_ingles": {
+      "system_instruction": "You are an expert system in temporal video sequence analysis. You will receive a small chronological window of consecutive video frames. Your task is to analyze the context, movement, or evolution of the action across the ENTIRE SEQUENCE as a whole, based on the user's query.",
+      "task_template": "User query: '{user_query}'.\n\nAnalyze the temporal evolution of the following sequence of frames and extract a final joint conclusion describing the detected action or movement."
     }
   },
   "llm": {
     "temporal_reasoning": {
-      "system_instruction": "Eres un analista semántico de vídeo. Tu objetivo es procesar una lista temporal de detecciones visuales e identificar los intervalos de tiempo exactos (inicio y fin) donde ocurre un evento.",
-      "task_template": "A continuación te proporciono un historial de fotogramas analizados en formato JSON:\n{frames_history}\n\nBasándote en estos datos, identifica en qué intervalos de tiempo ocurre el siguiente evento: '{user_query}'.\nResume la narrativa del evento y devuelve los timestamps."
+      "system_instruction": "Eres un analista semántico de vídeo. Tu objetivo es procesar un historial de detecciones visuales e identificar los intervalos exactos donde ocurre un evento.",
+      "task_template": "A continuación te proporciono un historial de fotogramas analizados:\n{frames_history}\n\nBasándote en estos datos, identifica en qué intervalos de tiempo ocurre el siguiente evento: '{user_query}'. Resume la narrativa del evento y devuelve los timestamps."
     },
     "global_summary": {
       "system_instruction": "Eres un experto en síntesis narrativa.",

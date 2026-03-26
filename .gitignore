@@ -24,9 +24,7 @@ Thumbs.db
 
 # Ignoramos los videos y fotos, pero queremos mantener la estructura de carpetas
 datasets/
-projects/**/frames/
-projects/**/video/
-projects/**/annotations/
+projects/
 
 # --- ARCHIVOS MULTIMEDIA  ---
 *.mp4

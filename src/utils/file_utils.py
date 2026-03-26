@@ -5,17 +5,21 @@ import base64
 from fastapi import UploadFile
 
 def ensure_dir(path: str):
-    """crea un directorio de forma segura si no existe."""
+    """crea un directorio de forma segura si no existe"""
     if path:
         os.makedirs(path, exist_ok=True)
 
+
+
 def load_json(file_path: str) -> dict:
-    """carga un archivo json con codificación utf-8."""
+    """carga un archivo json con codificación utf-8"""
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"[ERROR] No se encuentra el archivo JSON: {file_path}")
     
     with open(file_path, "r", encoding="utf-8") as file:
         return json.load(file)
+
+
 
 def save_json(data: list | dict, file_path: str):
     """guarda un diccionario o lista en formato json"""
@@ -24,14 +28,31 @@ def save_json(data: list | dict, file_path: str):
     with open(file_path, "w", encoding="utf-8") as file:
         json.dump(data, file, indent=4, ensure_ascii=False)
 
+
+
+def save_results(data_models: list, file_path: str):
+    """
+    Convierte una lista de objetos de dominio (pydantic) a diccionarios
+    y utiliza save_json para almacenarlos en disco
+    """
+    # extraer datos crudos usando model_dump() 
+    datos_dict = [item.model_dump() for item in data_models]
+    
+    # reutilizar la función base 
+    save_json(datos_dict, file_path)
+
+
+
 def encode_image_base64(image_path: str) -> str:
-    """lee una imagen del disco y la convierte a cadena base64."""
+    """lee una imagen del disco y la convierte a cadena base64"""
     if not os.path.exists(image_path):
         raise FileNotFoundError(f"[ERROR] No se encuentra la imagen: {image_path}")
     
     with open(image_path, "rb") as image_file:
         return base64.b64encode(image_file.read()).decode("utf-8")
     
+
+
 async def save_upload_file(upload_file: UploadFile, destination_path: str) -> str:
     """
     guarda un archivo subido en el disco duro por bloques
@@ -47,6 +68,8 @@ async def save_upload_file(upload_file: UploadFile, destination_path: str) -> st
     finally:
         # resetear el puntero del archivo por si otra función necesita leerlo después
         await upload_file.seek(0)
+
+
 
 def get_list_models(config_path: str) -> dict:
     """
