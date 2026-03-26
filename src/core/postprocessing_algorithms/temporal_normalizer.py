@@ -9,30 +9,32 @@ from src.utils.config_loader import ConfigLoader
 
 class TemporalNormalizer(ABC):
 
-    def __init__(self):
+    def __init__(self, apply_alg : bool):
         self.config = ConfigLoader()
-        self.inteval_time = self.config.get_video_float("frame_interval")
+        self.interval_time = self.config.get_video_float("frame_interval")
+        self.apply = apply_alg 
 
 
     def process_and_group(self, raw_results: List[FrameResults]) -> List[EventInterval]:
 
-        pass
-
         # Fase 1
-        #cleaned_results = self._apply_sliding_window(raw_results)
-        
+        if self.apply:
+            cleaned_results = self._apply_sliding_window(raw_results)
+            events = self._extract_intervals(cleaned_results)
+            
         # Fase 2
-        #events = self._extract_intervals(cleaned_results)
+        else:
+            events = self._extract_intervals(raw_results)
         
-        #return events
+        return events
 
     @abstractmethod
-    def apply_sliding_window(self, results: List[FrameResults]) -> List[FrameResults]:
+    def _apply_sliding_window(self, results: List[FrameResults]) -> List[FrameResults]:
         """
          Corrige los falsos positivos/negativos analizando los vecinos.
         """
 
-    def extract_intervals(self, cleaned_results: List[FrameResults]) -> List[EventInterval]:
+    def _extract_intervals(self, cleaned_results: List[FrameResults]) -> List[EventInterval]:
         """
         Convierte rachas continuas de detectado=True en objetos EventInterval.
         """
@@ -66,8 +68,8 @@ class TemporalNormalizer(ABC):
     
     def _save_event(self,event_id: int, inicio_evento : int, fin_evento: int) -> EventInterval :
 
-        start_time = inicio_evento*self.inteval_time
-        end_time = fin_evento*self.inteval_time
+        start_time = inicio_evento*self.interval_time
+        end_time = fin_evento*self.interval_time
 
         return EventInterval( event_id=event_id,start_frame=inicio_evento,end_frame=fin_evento,
                              start_timestamp=start_time,end_timestamp=end_time)

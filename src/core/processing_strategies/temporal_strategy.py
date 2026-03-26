@@ -10,10 +10,17 @@ from src.core.output_parsers.base_parser import BaseFrameParser
 from src.utils.file_utils import load_json
 from src.utils.project_status import ProjectStatus
 
+
+INITIAL_CONTEXT_FRAMES  = 2 # frame actual  y futuro para el primer frame
+WINDOW_STEP  = 1            # avanzamos de 1 en 1 para mantener el solapamiento (t-1, t, t+1) centrandonos en analizar t
+
 class TemporalStrategy(ProcessingStrategy):
+
 
     def __init__(self, parser : BaseFrameParser):
         super().__init__(parser)
+
+
 
     def load_prompts(self) -> tuple[str, str]:
         prompts_path = os.path.join(self.config.get_path("config_folder"), "prompts.json")
@@ -31,134 +38,165 @@ class TemporalStrategy(ProcessingStrategy):
         return system_prompt_final, task_template
 
 
-    async def procesar_cola(self, processor: VLMProcessor, prompt_usuario: str, cola: asyncio.Queue, resultados: list):
 
-        CONTEXTO_INICIAL_FRAMES = 2 # frame actual  y futuro para el primer frame
-        PASO_VENTANA = 1            # avanzamos de 1 en 1 para mantener el solapamiento (t-1, t, t+1) centrandonos en analizar t
+
+    async def process_queue(self, processor: VLMProcessor, user_prompt: str, queue: asyncio.Queue, resultados: list) -> None:
 
         try:
-            buffer_frames: list[FramesPath] = []
-            
-            # --- FASE 1: INICIO ---
-            primera_extraccion = await self._extraer_lote(cola, CONTEXTO_INICIAL_FRAMES)
-            if not primera_extraccion:
+            frame_buffer: list[FramesPath] = []
+            # proceso de recorrer la queue de n frames
+            # extraer los dos primeros frames de la queue para analizar el primero con el contexto de ambos
+            if not await self._process_initial_phase(frame_buffer, processor, user_prompt, queue, resultados):
                 return
-                
-            buffer_frames.extend(primera_extraccion)
-            await self._evaluar_ventana(processor, prompt_usuario, buffer_frames, 0, "Analizando inicio...", cola, resultados)
+            # recorre en grupos de tres para analizar el frame t ayudandose de t-1 y t+1 
+            await self._process_middle_phase(frame_buffer, processor, user_prompt, queue, resultados)
 
-            # --- FASE 2: MEDIO ---
-            while True:
-                frame_to_analyze = await self._extraer_lote(cola, PASO_VENTANA)
-                if not frame_to_analyze: 
-                    break      
-
-                buffer_frames.extend(frame_to_analyze) 
-                
-                # El frame objetivo es el del medio (índice 1)
-                await self._evaluar_ventana(processor, prompt_usuario, buffer_frames, 1, "Analizando ventana...", cola, resultados)
-                
-                buffer_frames.pop(0) # Avanzamos la ventana
-
-            # --- FASE 3: FINAL ---
-            if len(buffer_frames) > 1:
-                # El frame objetivo es el último (índice -1)
-                await self._evaluar_ventana(processor, prompt_usuario, buffer_frames, -1, "Analizando final...", cola, resultados)
-                
-            cola.task_done() # Marcamos el None final del bucle
+            # ultima iteracion del proceso donde se analiza el ultmio frame ayudandose del frame n-1 
+            await self._process_final_phase(frame_buffer, processor, user_prompt, queue, resultados)
 
         except Exception as e:
-            # ¡EL CAZADOR DE ERRORES SILENCIOSOS!
-            import traceback
-            print(f"\n  [ERROR FATAL OCULTO EN LA ESTRATEGIA] ")
-            print(f"Motivo: {e}")
-            traceback.print_exc()
             
-            # Forzamos la liberación de la cola para que el Orquestador no se quede congelado
-            print(" [DEBUG] Forzando liberación de la cola por emergencia...")
-            while not cola.empty():
+            print(f"\n  [ERROR FATAL OCULTO EN LA ESTRATEGIA] Motivo: {e}")
+            
+            # liberar queue para que no se quede congelado
+            print(" [DEBUG] Forzando liberación de la queue por emergencia...")
+            while not queue.empty():
                 try:
-                    cola.get_nowait()
-                    cola.task_done()
-                except:
-                    pass
-            cola.task_done() # Para asegurar
+                    queue.get_nowait()
+                    queue.task_done()
 
-    async def _evaluar_ventana(self, processor: VLMProcessor, prompt_usuario: str, 
-                               buffer_frames: list[FramesPath], target_index: int, 
-                               mensaje_estado: str, cola: asyncio.Queue, resultados: list):
-        """Método auxiliar genérico para evaluar una ventana de frames y notificar el progreso."""
-        
-        frame_objetivo = buffer_frames[target_index] 
-        self.notify(ProjectStatus.ANALYZING, mensaje_estado, frame_objetivo.frame_id)
-        
-        print(f" [DEBUG] {mensaje_estado} (frame_{frame_objetivo.frame_id})")
-        
-        await self._procesar_lote_interno(processor, prompt_usuario, buffer_frames, frame_objetivo, resultados)
-        cola.task_done()
+                except Exception as ex:
+                    print(f"Error liberando la queue {ex}")
+            queue.task_done() 
 
-    async def _extraer_lote(self, cola: asyncio.Queue, batch_size: int) -> list[FramesPath]:
-        lote = []
-        while len(lote) < batch_size: 
-            # print(" [DEBUG] Esperando paquete de la cola...")
-            paquete = await cola.get() 
 
-            if paquete is None:
-                print(" [DEBUG] ¡None recibido! El vídeo ha terminado.")
-                # Volvemos a meter el None para no romper el join() del orquestador
-                # y para que otros bucles sepan que se acabó
-                cola.task_done()
 
-                cola.put_nowait(None) 
+
+    async def _process_initial_phase(self, frame_buffer : list[FramesPath], processor: VLMProcessor, user_prompt: str, queue: asyncio.Queue, resultados: list) -> bool:
+        print("[AVISO] Comenzando fase de procesamiento : TEMPORAL-STRATEGY")
+        primera_extraccion = await self._extract_batch(queue, INITIAL_CONTEXT_FRAMES)
+        if not primera_extraccion:
+             return False
                 
-                # Salimos del bucle devolviendo lo que hayamos logrado recolectar
-                break
+        frame_buffer.extend(primera_extraccion)
+        await self._evaluar_ventana(processor, user_prompt, frame_buffer, 0, "Analizando inicio", queue, resultados)
+        
+        return True
 
-            # print(f" [DEBUG] Extraído frame_{paquete.frame_id}")
-            lote.append(paquete)
 
-        return lote
+
+
+    async def _process_middle_phase(self,frame_buffer : list[FramesPath], processor: VLMProcessor, user_prompt: str, queue: asyncio.Queue, resultados: list):
+        while True:
+            frame_to_analyze = await self._extract_batch(queue, WINDOW_STEP)
+            if not frame_to_analyze: 
+                break      
+
+            frame_buffer.extend(frame_to_analyze) 
+                
+            # el frame objetivo es el del medio 
+            await self._evaluar_ventana(processor, user_prompt, frame_buffer, 1, "Analizando ventana...", queue, resultados)
+            
+            frame_buffer.pop(0) # eliminar el frame mas a la izq de la ventana 
+
+
+
+
+    async def _process_final_phase(self,frame_buffer : list[FramesPath], processor: VLMProcessor, user_prompt: str, queue: asyncio.Queue, resultados: list):
+        if len(frame_buffer) > 1:
+            # el frame objetivo es el último , por eso indice -1
+            await self._evaluar_ventana(processor, user_prompt, frame_buffer, -1, "Analizando final...", queue, resultados)
+                
+            queue.task_done() # marcar el none final del bucle
 
     
-    async def _procesar_lote_interno(self, processor: VLMProcessor, prompt_usuario: str, buffer_frames: list[FramesPath], frame_objetivo: FramesPath, resultados: list):
-        """Coordina el envío de la ventana temporal al modelo gestionando los reintentos síncronos."""
-        max_intentos = self.config.get_video_int("max_intents_frame")
+
+
+    async def _evaluar_ventana(self, processor: VLMProcessor, user_prompt: str, 
+                               frame_buffer: list[FramesPath], target_index: int, 
+                               status_message: str, queue: asyncio.Queue, resultados: list) -> None:
+        """Método para evaluar una ventana de frames y actualizar/notificar el progreso"""
         
-        for intento in range(1, max_intentos + 1):
+        target_frame = frame_buffer[target_index] 
+
+        self.notify(ProjectStatus.ANALYZING, status_message, target_frame.frame_id)
+        
+        print(f" [DEBUG] {status_message} - frame_{target_frame.frame_id}")
+        
+        await self._process_batch_interno(processor, user_prompt, frame_buffer, target_frame, resultados)
+
+        queue.task_done()
+
+
+
+
+    async def _extract_batch(self, queue: asyncio.Queue, batch_size: int) -> list[FramesPath]:
+        batch = []
+        while len(batch) < batch_size: 
+        
+            frame_item = await queue.get() 
+
+            if frame_item is None:
+                print(" [DEBUG] Flag de fin recibida. El vídeo ha terminado.")
+                # se vuelve a meter el none para no romper el join() del orquestador
+                queue.task_done()
+
+                queue.put_nowait(None) 
+                
+                break
+
+            batch.append(frame_item)
+
+        return batch
+
+
+
+
+    async def _process_batch_interno(self, processor: VLMProcessor, user_prompt: str, frame_buffer: list[FramesPath],
+                                                                     target_frame: FramesPath, resultados: list) -> None:
+        """Coordina el envío de la ventana de frames al modelo gestionando los reintentos de forma secuencial"""
+
+        max_attempts = self.config.get_video_int("max_intents_frame")
+        
+        for attempt  in range(1, max_attempts + 1):
             try:
-                # 1. Construimos el layout con la ventana cronológica
-                layout_mensaje = self._build_model_request(prompt_usuario, buffer_frames)
+                #construir el formato de peticion adecuado para el tipo de procesamiento especifico
+                layout_mensaje = self._build_model_request(user_prompt, frame_buffer)
                 
-                # 2. El procesador solo recibe el layout
-                respuesta_bruta = await asyncio.to_thread(processor.analyze_frame, layout_mensaje)
+                # enviar al procesador el mensaje 
+                respuesta_bruta = await asyncio.to_thread(processor.process_layout, layout_mensaje)
                 
-                # 3. ¡El Parser inyectado hace la magia!
-                respuesta_validada = self.parser.parse(respuesta_bruta, frame_objetivo.frame_id)
+                # utilizar el parser especifico para validar la respuesta en el formato esperado
+                respuesta_validada = self.parser.parse(respuesta_bruta, target_frame.frame_id)
 
                 resultados.append(respuesta_validada)
-                print(f" Terminado análisis temporal para frame_{frame_objetivo.frame_id}")
+                print(f" Terminado análisis temporal para frame_{target_frame.frame_id}")
                 return 
 
             except Exception as e:
-                print(f" [ALERTA] Intento {intento}/{max_intentos} fallido temporalmente para frame_{frame_objetivo.frame_id}: {e}")
-                if intento == max_intentos:
-                    print(f" [ERROR CRÍTICO] Se agotaron los intentos para el frame_{frame_objetivo.frame_id}")
-                    resultados.append(self._generar_error_fallback(frame_objetivo.frame_id, max_intentos, str(e)))
+                print(f" [AVISO] Intento {attempt}/{max_attempts} fallido procesando el frame_{target_frame.frame_id}: {e}")
+                if attempt == max_attempts:
+                    print(f" [ERROR] Se agotaron los intentos para el frame_{target_frame.frame_id}")
+                    resultados.append(self._generar_error_fallback(target_frame.frame_id, max_attempts, str(e)))
 
 
-    def _build_model_request(self, prompt_usuario: str, buffer_frames: list[FramesPath]) -> list[dict]:
-        """Construye el layout Data-Driven para la petición temporal."""
-        layout_mensaje = [{"type": "text", "content": prompt_usuario}]
+
+
+    def _build_model_request(self, user_prompt: str, frame_buffer: list[FramesPath]) -> list[dict]:
+        """Construye el formato de peticion especifico del tipo de procesamiento para la petición que se enviará al modelo"""
+        layout_mensaje = [{"type": "text", "content": user_prompt}]
         
-        for frame in buffer_frames:
+        for frame in frame_buffer:
             layout_mensaje.append({"type": "image", "content": frame})
             
         return layout_mensaje
 
-   
+
+
+
     @staticmethod
     def _generar_error_fallback(frame_id: int, max_intentos: int, error_msg: str) -> FrameResults:
-        """Genera un diccionario de error estandarizado cuando fallan todos los intentos."""
+        """Estandariza el formato de respuesta fallida que se almacena en el archivo de resultados"""
         return FrameResults(frame_id=frame_id, 
                             detectado=False, 
                             descripcion=f"Error: Fallo de análisis temporal tras {max_intentos} intentos. Detalle: {error_msg}")

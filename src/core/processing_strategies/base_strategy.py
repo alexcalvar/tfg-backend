@@ -27,7 +27,7 @@ class ProcessingStrategy(StatusObservable):
         pass
 
     @abstractmethod
-    async def procesar_cola(self, processor: VLMProcessor, prompt_usuario: str, cola: asyncio.Queue, resultados: list) -> None:
+    async def process_queue(self, processor: VLMProcessor, prompt_usuario: str, cola: asyncio.Queue, resultados: list) -> None:
         """Consume la cola de frames y procesa según la lógica de la estrategia."""
         pass
 

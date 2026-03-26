@@ -11,11 +11,13 @@ from src.utils.project_status import ProjectStatus
 
 class BatchStrategy(ProcessingStrategy):
 
+
     def __init__(self, parser: BaseFrameParser): 
         super().__init__(parser)
-        
 
-    def load_prompts(self ) -> tuple[str, str]:
+
+
+    def load_prompts(self) -> tuple[str, str]:
         prompts_path = os.path.join(self.config.get_path("config_folder"), "prompts.json")
         config_prompts = load_json(prompts_path)
         categoria_prompts = self.config.get_sys_config("selected_vlm_prompts_list")
@@ -30,13 +32,15 @@ class BatchStrategy(ProcessingStrategy):
         return system_prompt_final, task_template
 
 
-    async def procesar_cola(self, processor: VLMProcessor, prompt_usuario: str, cola: asyncio.Queue, resultados: list):
+
+
+    async def process_queue(self, processor: VLMProcessor, user_prompt: str, queue: asyncio.Queue, resultados: list):
             
         FRAMES_PER_BATCH = self.config.get_video_int("frames_per_batch")
         flag = True
 
         while flag:
-            frames_to_analyze = await self._extraer_lote_seguro(cola, FRAMES_PER_BATCH)
+            frames_to_analyze = await self._extract_batch(queue, FRAMES_PER_BATCH)
 
             if not frames_to_analyze: 
                 print("Fin de la extracción detectado. Cerrando procesador.")
@@ -47,75 +51,82 @@ class BatchStrategy(ProcessingStrategy):
                 flag = False
 
             ultimo_frame_id = frames_to_analyze[-1].frame_id 
-            self.notify(ProjectStatus.ANALYZING, "Analizando lote...", ultimo_frame_id)
+            self.notify(ProjectStatus.ANALYZING, "Analizando batch...", ultimo_frame_id)
 
-            await self._procesar_lote_interno(processor, prompt_usuario, frames_to_analyze, cola, resultados)
+            await self._process_batch_interno(processor, user_prompt, frames_to_analyze, queue, resultados)
 
             # marcar las tareas como hechas 
             for _ in frames_to_analyze:
-                cola.task_done()
+                queue.task_done()
 
 
-    async def _extraer_lote_seguro(self, cola: asyncio.Queue, batch_size: int) -> list[FramesPath]:
-        """Extrae un lote gestionando correctamente el None y los reintentos."""
-        lote = []
-        while len(lote) < batch_size: 
-            paquete = await cola.get() 
-            if paquete is None: 
-                cola.task_done()
-                if cola.empty():
-                    cola.put_nowait(None) 
-                    break
-                else:
-                    cola.put_nowait(None)
-                    await asyncio.sleep(0.1) 
-            else:
-                lote.append(paquete)
-        return lote
 
 
-    async def _procesar_lote_interno(self, processor: VLMProcessor, prompt_usuario: str, lote: list[FramesPath], cola: asyncio.Queue, resultados: list):
+    async def _extract_batch(self, queue: asyncio.Queue, batch_size: int) -> list[FramesPath]:
+        batch = []
+
+        while len(batch) < batch_size:
+            item = await queue.get()
+
+            if item is None:
+                queue.task_done()
+                break
+
+            batch.append(item)
+
+        return batch
+
+
+
+
+    async def _process_batch_interno(self, processor: VLMProcessor, user_prompt: str, batch: list[FramesPath], queue: asyncio.Queue, resultados: list):
         try:
 
-            # 1. Data-Driven Design: Construimos el Layout para la petición
-            layout_mensaje = self._build_model_request(prompt_usuario, lote)
+            #construir el formato de peticion adecuado para el tipo de procesamiento especifico
+            layout_mensaje = self._build_model_request(user_prompt, batch)
             
-            # 2. El procesador solo envía el layout y devuelve el string crudo
-            respuesta_bruta = await asyncio.to_thread(processor.analyze_frame, layout_mensaje )
+            # se envia al modelo el tipo de peticion especifica y se espera un string de respuesta
+            respuesta_bruta = await asyncio.to_thread(processor.process_layout, layout_mensaje )
 
-            # 3. El Parser asume toda la responsabilidad de leer el string
-            # y transformarlo en una lista de objetos FrameResults
-            resultados_parseados = self.parser.parse_batch(respuesta_bruta, lote)
+            #  el parser asume toda la responsabilidad de leer el string
+            # y transformarlo en una lista de objetos frameresult
+            resultados_parseados = self.parser.parse_batch(respuesta_bruta, batch)
 
-            # 4. Guardar los resultados exitosos
+            # guardar resultados
             for frame_result in resultados_parseados:
                 resultados.append(frame_result)
                 print(f" Terminado: frame_{frame_result.frame_id}")
 
         except Exception as e: 
-            print(f" Error analizando el lote o de formato: {e}")
-            await self._gestionar_fallo_lote(lote, resultados, cola, f"Fallo de sistema/parseo: {e}")
+            print(f" Error analizando el batch o de formato: {e}")
+            await self._handle_batch_failure(batch, resultados, queue, f"Fallo de sistema/parseo: {e}")
 
 
 
-    async def _gestionar_fallo_lote(self, lote: list[FramesPath], resultados: list, cola: asyncio.Queue, motivo: str):
-        print(f" [ALERTA] Reintentando lote debido a: {motivo}")
-        for frame_obj in lote:
+
+    async def _handle_batch_failure(self, batch: list[FramesPath], resultados: list, queue: asyncio.Queue, motivo: str):
+        print(f" [ALERTA] Reintentando batch debido a: {motivo}")
+        for frame_obj in batch:
             intentos_restantes = frame_obj.intentos - 1
             if intentos_restantes > 0:
-                await cola.put(FramesPath(frame_obj.frame_id, frame_obj.frame_path, intentos_restantes))
+                await queue.put(FramesPath(frame_obj.frame_id, frame_obj.frame_path, intentos_restantes))
             else:
                 resultados.append(self._crear_resultado(frame_obj.frame_id, False, f"Error Crítico: {motivo}"))    
 
 
-    def _build_model_request(self, prompt_usuario : str, lote : list[FramesPath]) -> list:
+
+
+    def _build_model_request(self, user_prompt : str, batch : list[FramesPath]) -> list:
         layout_mensaje = []
         
-        for frame in lote:
-            layout_mensaje.append({"type": "text", "content": prompt_usuario})
+        for frame in batch:
+            layout_mensaje.append({"type": "text", "content": user_prompt})
             layout_mensaje.append({"type": "image", "content": frame})
 
         return layout_mensaje
+
+
+
 
     @staticmethod
     def _crear_resultado(frame_id: int, detectado: bool, descripcion: str) -> FrameResults:

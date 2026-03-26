@@ -83,7 +83,7 @@ class VideoLoader:
         
 
     def get_expected_frame_count(self, interval: float) -> int:
-        """calcula cuántos frames se extraerán antes de iniciar el proceso."""
+        """calcula cuántos frames se extraerán antes de iniciar el proceso"""
         
         cap = cv2.VideoCapture(self.video_path)
         if not cap.isOpened():

@@ -4,22 +4,17 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from src.data.validators import FramesPath
 from src.utils.file_utils import encode_image_base64
 
-class MessageBuilderStrategy(ABC):
+class MessageStrategy(ABC):
     """
-    Clase abstracta que define el contrato para todos los constructores de mensajes.
-    Utiliza un enfoque Data-Driven: recibe un layout pre-ordenado desde la Estrategia.
+    Clase abstracta que define el contrato para todos los constructores de mensajes,
+     recibe un layout desde la estrategia que define el formato de la peticion que se enviara al modelo
     """
     
     @abstractmethod
     def build_messages(self, system_prompt: str, layout: list[dict]) -> list:
         """
-        'layout' es una lista ordenada de diccionarios creada por la Estrategia.
-        Ejemplo:
-        [
-            {"type": "text", "content": "Busca un perro en estos frames:"},
-            {"type": "image", "content": objeto_FramesPath_1},
-            {"type": "image", "content": objeto_FramesPath_2}
-        ]
+        Funcion encargada de generar las peticiones que se enviaran al modelo siguiendo el formato 
+        del layout definido para la estrategia de procesamiento correspondiente
         """
         pass
 
@@ -27,11 +22,10 @@ class MessageBuilderStrategy(ABC):
         return f"data:{mime_type};base64,{image_b64}"
 
 
-class CloudMessageBuilder(MessageBuilderStrategy):
+class CloudMessageBuilder(MessageStrategy):
     """
-    Estrategia para modelos en la nube.
-    Respeta la separación entre SystemMessage y HumanMessage.
-    Traduce el layout genérico al formato específico de LangChain respetando el orden.
+    Estrategia para modelos en la nube. Respeta la separación entre SystemMessage y HumanMessage.
+    Traduce el layout genérico al formato específico respetando el orden.
     """
     def build_messages(self, system_prompt: str, layout: list[dict]) -> list:
 
@@ -43,13 +37,13 @@ class CloudMessageBuilder(MessageBuilderStrategy):
                 human_content.append({"type": "text", "text": item["content"]})
             
             elif item["type"] == "image":
-                # 1. Recuperamos el objeto FramesPath del layout
+                # recuperar el objeto FramesPath del layout
                 frame_obj: FramesPath = item["content"]
                 
-                # 2. CONVERSIÓN LATE-BOUND (Lazy Evaluation): Leemos el archivo a Base64
+                # conversion leer el archivo a B64 (Lazy Evaluation - incluir en la docu)
                 base64_img = encode_image_base64(frame_obj.frame_path)
                 
-                # 3. Lo metemos en el formato LangChain usando el frame_id
+                # incluir en el formato usando el frame_id
                 human_content.append({"type": "text", "text": f"Frame {frame_obj.frame_id}:"})
                 human_content.append({
                     "type": "image_url", 
@@ -62,31 +56,30 @@ class CloudMessageBuilder(MessageBuilderStrategy):
         ]
 
 
-class LocalMessageBuilder(MessageBuilderStrategy):
+class LocalMessageBuilder(MessageStrategy):
     """
-    Estrategia para modelos locales.
-    Soluciona la "fuga de abstracción": a menudo ignoran el SystemMessage o 
-    alucinan si hay múltiples roles. Se unifican las instrucciones de sistema
-    y el layout del usuario en un único HumanMessage.
+    Estrategia para modelos locales, a menudo ignoran el SystemMessage o 
+    alucinan si hay múltiples roles por lo tanto se unifican las instrucciones de sistema
+    y el layout del usuario en un unico HumanMessage.
     """
     def build_messages(self, system_prompt: str, layout: list[dict]) -> list:
 
-        # 1. Colocamos el System Prompt al principio del contenido "Humano"
+        # system prompt al principio del contenido 
         human_content = [{"type": "text", "text": f"INSTRUCCIONES DEL SISTEMA:\n{system_prompt}\n\n---"}]
         
-        # 2. Iteramos sobre el layout que nos dictó la estrategia
+        # iterar sobre el layout determinado para la estrategia seleccionada
         for item in layout:
             if item["type"] == "text":
                 human_content.append({"type": "text", "text": f"Instrucción: {item['content']}"})
             
             elif item["type"] == "image":
-                # 1. Recuperamos el objeto FramesPath del layout
+                # recuperar el framepath del layout
                 frame_obj: FramesPath = item["content"]
                 
-                # 2. CONVERSIÓN LATE-BOUND (Lazy Evaluation)
+                # conversion
                 base64_img = encode_image_base64(frame_obj.frame_path)
                 
-                # 3. Formato LangChain
+                # par frame-img en b64
                 human_content.append({"type": "text", "text": f"Frame {frame_obj.frame_id}:"})
                 human_content.append({
                     "type": "image_url", 

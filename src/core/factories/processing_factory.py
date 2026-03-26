@@ -16,29 +16,9 @@ class ProcessingFactory:
     def __init__(self):
         self.config = ConfigLoader()
 
-    def _create_parser(self) -> BaseFrameParser:
-        """Método factoría interno para instanciar el parser según la configuración."""
-        parser_str = self.config.get_sys_config("output_parser_type")
-        
-        # Mapeo seguro del string al Enum
-        try:
-            parser_selected = ParserType(parser_str)
-        except ValueError:
-            print(f" [ALERTA] Parser '{parser_str}' no reconocido en config. Usando JSON por defecto.")
-            parser_selected = ParserType.JSON
-        
-        match parser_selected:
-            case ParserType.TEXT:
-                print(" [INFO] Construyendo sistema con Parser de Texto Libre (Sí/No)")
-                return YesNoTextParser()
-            
-            case ParserType.JSON:
-                print(" [INFO] Construyendo sistema con Parser JSON Estricto")
-                return JsonFrameParser()
-
     
     def create_strategy(self, strategy_selected : str) -> ProcessingStrategy:
-
+        """ Método encargado de crear la instancia del tipo de procesamiento"""
         try:
             strategy_selected = StrategyType(strategy_selected)
         except ValueError:
@@ -57,3 +37,23 @@ class ProcessingFactory:
             case _:
                 raise ValueError(f"[ERROR] Estrategia de procesamiento {strategy_selected} no soportada ")
             
+
+    def _create_parser(self) -> BaseFrameParser:
+        """Método para crear el parser según la configuración del propertiesj"""
+        parser_str = self.config.get_sys_config("output_parser_type")
+        
+        # string a enum
+        try:
+            parser_selected = ParserType(parser_str)
+        except ValueError:
+            print(f" [ALERTA] Parser '{parser_str}' no reconocido en config. Usando JSON por defecto.")
+            parser_selected = ParserType.JSON
+        
+        match parser_selected:
+            case ParserType.TEXT:
+                print(" [INFO] Construyendo sistema con Parser de Texto Libre (Sí/No)")
+                return YesNoTextParser()
+            
+            case ParserType.JSON:
+                print(" [INFO] Construyendo sistema con Parser JSON Estricto")
+                return JsonFrameParser()

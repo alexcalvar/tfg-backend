@@ -12,15 +12,13 @@ class JsonFrameParser(BaseFrameParser):
             "Claves obligatorias: 'detectado' (booleano) y 'descripcion' (string)."
         )
 
-    # ==========================================
-    # MÉTODOS PÚBLICOS DE PARSEO
-    # ==========================================
+
 
     def parse(self, text: str, frame_id: int) -> FrameResults:
-        """Parseo de un único objeto (usado por TemporalStrategy)."""
+
         diccionario = self._decodificar_json_seguro(text)
         
-        # Salvavidas: si el LLM lo metió en una lista por error
+        #comprobacion de si el vlm respondio con una lista
         if isinstance(diccionario, list) and len(diccionario) > 0:
             diccionario = diccionario[0]
 
@@ -33,30 +31,36 @@ class JsonFrameParser(BaseFrameParser):
             descripcion=diccionario.get("descripcion", "Error: Sin descripción")
         )
 
+
+
+
     def parse_batch(self, text: str, lote: list[FramesPath]) -> list[FrameResults]:
-        """Parseo de una lista de objetos (usado por BatchStrategy)."""
+
         estructura_cruda = self._decodificar_json_seguro(text)
         
-        # 1. Intentar "salvar" la estructura si el LLM hizo algo extraño
+        # revisa la estructura devuelta por el vlm, en caso de que haya algun error intenta 
+        # arreglar la estructura para continuar con el parseado
         lista_diccionarios = self._salvar_estructura_diccionario(estructura_cruda)
 
-        # 2. Validaciones estrictas
+        # validaciones
         self._validar_lote_final(lista_diccionarios, len(lote), text)
         
-        # 3. Mapeo al DTO final
+        # mapear a frame result 
         resultados = []
+
         for frame_obj, dict_respuesta in zip(lote, lista_diccionarios):
+        
             resultados.append(FrameResults(
                 frame_id=frame_obj.frame_id,
-                detectado=self._normalizar_booleano(dict_respuesta.get("detectado", False)),
+                detectado=self._normalizar_booleano(dict_respuesta.get("detectado", False)), #en caso de algun problema con el valor de detectado , guardar false
                 descripcion=dict_respuesta.get("descripcion", "Error: Sin descripción")
-            ))
+            )
+        )
             
         return resultados
 
-    # ==========================================
-    # MÉTODOS PRIVADOS DE APOYO 
-    # ==========================================
+ 
+ 
 
     def _decodificar_json_seguro(self, text: str):
         """Limpia la basura markdown y decodifica el JSON."""
@@ -75,41 +79,51 @@ class JsonFrameParser(BaseFrameParser):
         try:
             return json.loads(texto_limpio)
         except json.JSONDecodeError as e:
-            print(f"\n [DEBUG PARSER] El LLM no devolvió JSON válido:\n{texto_limpio}\n")
+            print(f"\n [DEBUG PARSER] El VLM no devolvió JSON válido:\n{texto_limpio}\n")
             raise ValueError(f"Error decodificando JSON: {e}")
 
+
+
+
     def _salvar_estructura_diccionario(self, estructura):
-        """Aplica heurísticas para corregir fallos comunes de formato de los LLMs."""
+        """Aplica heurísticas para corregir fallos comunes de formato de los VLMs."""
         if not isinstance(estructura, dict):
             return estructura # Si ya es lista, no hacemos nada
 
-        # Caso 1: Envolvió la lista en una clave, ej: {"resultados": [...]}
+        # envolvió la lista en una clave -> {"resultados": [...]}
         for key, value in estructura.items():
             if isinstance(value, list):
                 return value
         
-        # Caso 2: Devolvió un diccionario de diccionarios, ej: {"frame1": {...}, "frame2": {...}}
-        if all(isinstance(v, dict) for v in estructura.values()):
-            return list(estructura.values())
+        # devolvió un diccionario de diccionarios, ej: {"frame1": {...}, "frame2": {...}}
+        #if all(isinstance(v, dict) for v in estructura.values()):
+        #    return list(estructura.values())
             
-        # Caso 3: Devolvió 1 solo objeto asumiendo que aplica a todo el lote
+        #  devolvió 1 solo objeto asumiendo que aplica a todo el lote
         if "detectado" in estructura:
             return [estructura] 
 
         return estructura # Devolvemos lo que haya si no pudimos salvarlo
 
+
+
+
     def _validar_lote_final(self, lista_diccionarios, tamano_esperado: int, texto_original: str):
         """Asegura que la estructura resultante es válida para empaquetarla."""
+        
         if not isinstance(lista_diccionarios, list):
-            print(f"\n [DEBUG PARSER] Estructura devuelta por el LLM no soportada:\n{texto_original}\n")
-            raise ValueError(f"El LLM no devolvió una lista válida. Recibido: {type(lista_diccionarios)}")
+            print(f"\n [ERROR PARSER] Estructura devuelta por el VLM no soportada:\n{texto_original}\n")
+            raise ValueError(f"El VLM no devolvió una lista válida. Recibido: {type(lista_diccionarios)}")
             
         if len(lista_diccionarios) != tamano_esperado:
-            print(f"\n [DEBUG PARSER] Desajuste de tamaño. LLM devolvió:\n{texto_original}\n")
+            print(f"\n [ERROR PARSER] Desajuste de tamaño. VLM devolvió:\n{texto_original}\n")
             raise ValueError(f"Desajuste: El modelo devolvió {len(lista_diccionarios)} resultados, pero el lote tiene {tamano_esperado} imágenes.")
 
+
+
+
     def _normalizar_booleano(self, valor) -> bool:
-        """Asegura que 'true', 'True' o True acaben siendo un booleano de Python."""
+        """asegurar que las variantes de TRUE se interpreten como booleano"""
         if isinstance(valor, str):
             return valor.strip().lower() == "true"
         return bool(valor)

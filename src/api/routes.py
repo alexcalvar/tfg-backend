@@ -2,9 +2,12 @@ import os
 
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form, BackgroundTasks
 
+from src.core.postprocessing_algorithms.temporal_normalizer import TemporalNormalizer
 from src.core.pipeline import VLMPipeline
-from src.core.model_factory import ModelFactory
-from src.core.processing_factory import ProcessingFactory
+from src.core.factories.model_factory import ModelFactory
+from src.core.factories.processing_factory import ProcessingFactory
+from src.core.factories.algorithm_factory import AlgorithmFactory
+
 
 from src.utils.config_loader import ConfigLoader
 from src.utils.file_utils import load_json, save_upload_file, get_list_models
@@ -23,18 +26,21 @@ async def analyze_video(
     user_prompt: str = Form(...),
     provider: str = Form(...), 
     model_name: str = Form(...),
-    processing_mode: str = Form(...)
+    processing_mode: str = Form(...),
+    
 ):
     if not video.content_type.startswith("video/"):
         raise HTTPException(status_code=400, detail="El archivo debe ser un formato de vídeo válido.")
 
     try:
         modelo_solicitado, msg_strategy = ModelFactory().load_vlm(provider, model_name)
-        processing_strategy = ProcessingFactory.create_strategy(processing_mode)
+        processing_strategy = ProcessingFactory().create_strategy(processing_mode)
+        normalizer_algorithm = AlgorithmFactory().create_algorithm()
+
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error al cargar el modelo: {str(e)}")
 
-    pipeline = VLMPipeline(modelo_solicitado, provider, msg_strategy, processing_strategy)
+    pipeline = VLMPipeline(modelo_solicitado, provider, msg_strategy, processing_strategy, normalizer_algorithm)
     
     video_path_destino = os.path.join(pipeline.video_dir, video.filename)
     
