@@ -18,4 +18,8 @@ class ParserType(Enum):
 
 class StrategyType(Enum):
     BATCH = "batch_strategy"
-    TEMPORAL = "temporal_strategy"
+    TEMPORAL = "temporal_strategy" 
+
+
+class PostProcessingStrategy(Enum):
+    pass
