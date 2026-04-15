@@ -6,8 +6,13 @@ class VLMProvider(Enum):
     OLLAMA = "ollama"
     OPENROUTE = "openroute"
 
-class LLMProvider(Enum): #aun no implementado
-    pass
+class LLMProvider(Enum):
+    LLAMACPP = "llamacpp"
+    GOOGLE = "google"
+    OLLAMA = "ollama"
+    OPENROUTE = "openroute"
+    GROQ = "groq"
+
 
 class NormalizerAlgorithm(Enum):
     SLIDINGWINDOW = "sliding_window"

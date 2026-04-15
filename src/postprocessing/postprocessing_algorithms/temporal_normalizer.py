@@ -1,25 +1,33 @@
 import os
-from abc import ABC, abstractmethod
+from abc import  abstractmethod
 
-from typing import List
+from typing import Any, List
 
 from src.data.validators import FrameResults, EventInterval
 from src.utils.config_loader import ConfigLoader
+from src.postprocessing.postprocessing_mode import PostProcessingStrategy
+from src.utils.file_utils import save_results
 
-
-class TemporalNormalizer(ABC):
+class TemporalNormalizer(PostProcessingStrategy):
 
     def __init__(self, apply_alg : bool):
         self.config = ConfigLoader()
         self.interval_time = self.config.get_video_float("frame_interval")
         self.apply = apply_alg 
 
+    def execute(self, raw_results: List[FrameResults], results_dir: str) -> Any:
+        events = self.process_and_group(raw_results=raw_results)
+
+        events_file_path = os.path.join(results_dir, "intervalos.json")
+        save_results(events, events_file_path)
+        
+        return events
 
     def process_and_group(self, raw_results: List[FrameResults]) -> List[EventInterval]:
 
         # Fase 1
         if self.apply:
-            cleaned_results = self._apply_sliding_window(raw_results)
+            cleaned_results = self._apply_algoritm(raw_results)
             events = self._extract_intervals(cleaned_results)
             
         # Fase 2
@@ -29,7 +37,7 @@ class TemporalNormalizer(ABC):
         return events
 
     @abstractmethod
-    def _apply_sliding_window(self, results: List[FrameResults]) -> List[FrameResults]:
+    def _apply_algoritm(self, results: List[FrameResults]) -> List[FrameResults]:
         """
          Corrige los falsos positivos/negativos analizando los vecinos.
         """

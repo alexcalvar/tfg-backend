@@ -1,3 +1,4 @@
+from typing import List, Optional
 from pydantic import BaseModel
 from dataclasses import dataclass
 
@@ -27,6 +28,16 @@ class EventInterval(BaseModel):
     end_timestamp: float   # Segundos exactos en el vídeo (end_frame * intervalo)
     #descripcion: str
  
+class SummaryNode(BaseModel):
+    id: str
+    nivel: int
+    resumen: str
+    start_frame : int
+    end_frame : int
+    start_timestamp: float # Segundos exactos en el vídeo
+    end_timestamp: float
+    children: Optional[List['SummaryNode']] = [] # lista recursiva opcional. Por defecto es una lista vacía.
+
 
 #clases pydantic para gestionar los benchmarks
 class GroundTruthFrame(BaseModel):

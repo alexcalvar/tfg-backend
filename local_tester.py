@@ -7,7 +7,8 @@ from src.data.enums import StrategyType
 from src.core.pipeline import VLMPipeline 
 from src.core.factories.model_factory import ModelFactory
 from src.core.factories.processing_factory import ProcessingFactory
-from src.core.postprocessing_algorithms.sliding_window import SlidingWindowNormalizer
+from src.postprocessing.postprocessing_algorithms.sliding_window import SlidingWindowNormalizer
+from src.postprocessing.resums_logic.semantic_processor import SemanticAnalyzer
 from src.utils.file_utils import load_json
 
 class CLIModelTester:
@@ -115,6 +116,9 @@ class CLIModelTester:
             #  Menús interactivos
             vlm_provider, vlm_model_name = self._seleccionar_modelo()
             selected_process_stry = self._seleccionar_estrategia()
+
+            llm_provider = "ollama"
+            llm_model_name = "qwen2.5"
             
             #simula la decision del usuario de si quiere o no aplicar el algoritmo
             apply_alg = False
@@ -126,18 +130,21 @@ class CLIModelTester:
             algoritmo_normalizacion = SlidingWindowNormalizer(apply_alg)
             
             vlm_model, msg_strategy = ModelFactory().load_vlm(vlm_provider, vlm_model_name)
+            llm_model = ModelFactory().load_llm(llm_provider, llm_model_name)
             process_strategy = ProcessingFactory().create_strategy(selected_process_stry)
+
+            semantic_resum = SemanticAnalyzer(llm_instance=llm_model, user_prompt= user_prompt)
+            
 
             pipeline = VLMPipeline(
                 model_instance=vlm_model, 
                 provider_name=vlm_provider, 
                 message_strategy=msg_strategy, 
                 processing_strategy=process_strategy, 
-                temporal_normalizer=algoritmo_normalizacion
+                postprocessing_strategy=semantic_resum
             ) 
             
-            
-
+        
             #  Ejecución del análisis
             await pipeline.process_video(ruta_video, user_prompt)
             print("\n  Prueba finalizada con éxito. Revisa la carpeta de proyectos.")
@@ -155,7 +162,7 @@ if __name__ == "__main__":
     tester = CLIModelTester()
     
     # Parámetros definidos en la fase de análisis 
-    VIDEO_DE_PRUEBA = "video_perro_prueba.mp4" 
-    PROMPT_DE_PRUEBA = "Dime si ves un perro en la imagen"
+    VIDEO_DE_PRUEBA = "video_lobos.mp4" 
+    PROMPT_DE_PRUEBA = "Resume los contenidos y destaca los animales que veas"
     
     asyncio.run(tester.ejecutar_prueba(VIDEO_DE_PRUEBA, PROMPT_DE_PRUEBA))

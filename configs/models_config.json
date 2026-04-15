@@ -67,17 +67,26 @@
     },
     
     "llms": {
-        "groq_inteligente": {
-            "provider": "groq",
-            "model_string": "llama3-70b-8192",
-            "temperature": 0.0,
-            "descripcion": "Cerebro principal en la nube. Muy rápido y excelente razonamiento lógico."
-        },
-        "groq_rapido": {
-            "provider": "groq",
-            "model_string": "llama3-8b-8192",
-            "temperature": 0.0,
-            "descripcion": "Versión ligera de Llama 3. Ideal para pruebas ultrarrápidas."
+        "ollama" : {
+            "groq_inteligente": {
+                "provider": "groq",
+                "model_string": "llama3-70b-8192",
+                "temperature": 0.0,
+                "descripcion": "Cerebro principal en la nube. Muy rápido y excelente razonamiento lógico."
+            },
+            "groq_rapido": {
+                "provider": "groq",
+                "model_string": "llama3-8b-8192",
+                "temperature": 0.0,
+                "descripcion": "Versión ligera de Llama 3. Ideal para pruebas ultrarrápidas."
+            },
+            "qwen2.5": {
+                "provider" : "ollama",
+                "model_string": "qwen2.5:7b",
+                "temperature": 0.0,
+                "descripcion": "Qwen 2.5 llm "
+                
+            }
         }
     }
 }

@@ -35,6 +35,9 @@ class ConfigLoader:
 
     def get_sys_config(self, key: str) -> str:
         return self.config.get("Configuracion", key)
+    
+    def get_sys_config_int(self, key: str) -> int:
+        return self.config.getint("Configuracion", key)
 
 
 
