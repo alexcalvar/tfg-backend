@@ -35,23 +35,23 @@ def save_results(data, file_path: str):
     Guarda datos en un archivo JSON. Es capaz de procesar listas de modelos Pydantic, 
     modelos individuales o diccionarios nativos.
     """
-    # 1. Aseguramos que la carpeta existe
+    # asegurar q la carpeta existe
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
-    # 2. Detectamos qué tipo de dato nos han enviado
+    # detectar q tipo de dato es 
     if isinstance(data, list) and len(data) > 0 and hasattr(data[0], "model_dump"):
-        # Es una lista de Pydantic models (Ej: FrameResults de la fase visual)
+        # es una lista de Pydantic models 
         datos_a_guardar = [item.model_dump() for item in data]
         
     elif hasattr(data, "model_dump"):
-        # Es un único Pydantic model (Ej: SummaryNode si no le hiciéramos dump antes)
+        # es un único Pydantic model 
         datos_a_guardar = data.model_dump()
         
     else:
-        # Ya es un diccionario o una lista normal (Ej: root.model_dump() de tu SemanticAnalyzer)
+        # es un diccionario o una lista normal 
         datos_a_guardar = data
 
-    # 3. Guardamos el archivo
+    # guardar archivo
     with open(file_path, "w", encoding="utf-8") as f:
         json.dump(datos_a_guardar, f, indent=4, ensure_ascii=False)
 

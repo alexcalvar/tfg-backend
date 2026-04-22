@@ -64,7 +64,7 @@ class JsonFrameParser(BaseFrameParser):
 
     def _decodificar_json_seguro(self, text: str):
         """Limpia la basura markdown y decodifica el JSON."""
-        # Limpieza básica de Markdown
+        # limpieza básica de Markdown
         texto_limpio = text.strip()
         if texto_limpio.startswith("```json"):
             texto_limpio = texto_limpio[7:]
@@ -88,22 +88,18 @@ class JsonFrameParser(BaseFrameParser):
     def _salvar_estructura_diccionario(self, estructura):
         """Aplica heurísticas para corregir fallos comunes de formato de los VLMs."""
         if not isinstance(estructura, dict):
-            return estructura # Si ya es lista, no hacemos nada
+            return estructura # Si ya es lista, no hacer nada
 
-        # envolvió la lista en una clave -> {"resultados": [...]}
+        # si el modleo envolvió la lista en una clave -> {"resultados": [...]}
         for key, value in estructura.items():
             if isinstance(value, list):
                 return value
-        
-        # devolvió un diccionario de diccionarios, ej: {"frame1": {...}, "frame2": {...}}
-        #if all(isinstance(v, dict) for v in estructura.values()):
-        #    return list(estructura.values())
             
-        #  devolvió 1 solo objeto asumiendo que aplica a todo el lote
+        #  devolvió un solo objeto asumiendo que aplica a todo el lote
         if "detectado" in estructura:
             return [estructura] 
 
-        return estructura # Devolvemos lo que haya si no pudimos salvarlo
+        return estructura # devolver lo que haya si no se pude salvar
 
 
 

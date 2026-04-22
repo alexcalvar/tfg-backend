@@ -11,12 +11,6 @@ class PostProcessingStrategy(ABC):
     @abstractmethod
     def execute(self, raw_results: List[FrameResults], results_dir: str) -> Any:
         """
-        Ejecuta la lógica de post-procesamiento.
-        
-        Args:
-            raw_results: Lista de objetos tipados con las detecciones del VLM.
-            
-        Returns:
-            Any: Un objeto  tipado 
+        Ejecuta la lógica de post-procesamiento
         """
         pass

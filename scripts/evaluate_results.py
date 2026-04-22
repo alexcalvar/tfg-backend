@@ -16,27 +16,26 @@ def main():
         print(" [ERROR] Debes introducir un nombre de proyecto válido.")
         return
 
-    #  Construcción de rutas absolutas seguras
+    # construcción de rutas absolutas seguras
     DIRECTORIO_RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     PROJECT_DIR = os.path.join(DIRECTORIO_RAIZ, "projects", project_folder,"results")
     GROUND_TRUTH_FILE = os.path.join(DIRECTORIO_RAIZ, "projects", project_folder,"annotations", ground_truth)
     
     DATASET_FORMAT = "simple_json"
 
-    # Verificación de seguridad antes de arrancar
+    # verificación de seguridad antes de arrancar
     if not os.path.exists(PROJECT_DIR):
         print(f" [ERROR CRÍTICO] No existe el directorio: {PROJECT_DIR}")
         print(" Asegúrate de haber escrito bien el nombre y de que el proyecto se ejecutó previamente.")
         return
 
-    # Inicialización ultra-rápida (Sin cargar modelos VLM en la memoria RAM)
+    # inicialización ultra-rápida (Sin cargar modelos VLM en la memoria RAM)
     print("\n [1/2] Inicializando el motor de evaluación...")
     dataset_loader = DatasetLoader()
     
-    # Fíjate en la magia: le pasamos None al pipeline. No necesitamos la IA.
     runner = BenchmarkRunner(dataset_loader=dataset_loader, pipeline_instance=None)
 
-    #  Ejecución del cruce de datos
+    #  ejecución del cruce de datos
     print(f" [2/2] Cruzando el report.json con la Verdad Absoluta...")
     try:
         resultados = runner.evaluate_existing_project(

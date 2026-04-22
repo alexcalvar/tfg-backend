@@ -16,6 +16,10 @@ from src.postprocessing.postprocessing_mode import PostProcessingStrategy
 
 from src.observer.status_manager import ProjectStatusManager
 
+from src.utils.logger import get_logger
+
+logging = get_logger(__name__)
+
 class VLMPipeline:
 
     def __init__(self, model_instance, provider_name, message_strategy : MessageStrategy, 

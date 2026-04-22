@@ -74,7 +74,7 @@ class CLIModelTester:
         """Muestra el menú de estrategias y devuelve el valor del Enum seleccionado."""
         print("\n--- PASO 2: SELECCIÓN DE ESTRATEGIA DE PROCESAMIENTO ---")
         
-        # Extraemos las opciones dinámicamente del Enum
+        
         opciones_estrategia = list(StrategyType)
         
         for i, estrategia in enumerate(opciones_estrategia, start=1):
@@ -125,15 +125,25 @@ class CLIModelTester:
             
             # Ensamblaje de dependencias
             print("\n  Arrancando motores de IA...")
-            
-            #acordarse de cambiar por el factory
-            algoritmo_normalizacion = SlidingWindowNormalizer(apply_alg)
+
             
             vlm_model, msg_strategy = ModelFactory().load_vlm(vlm_provider, vlm_model_name)
-            llm_model = ModelFactory().load_llm(llm_provider, llm_model_name)
             process_strategy = ProcessingFactory().create_strategy(selected_process_stry)
 
-            semantic_resum = SemanticAnalyzer(llm_instance=llm_model, user_prompt= user_prompt)
+            #acordarse de cambiar por el factory
+            print("1 - DETECCION DE EVENTOS")
+            print("2 - LOGICA DE RESUMENES")
+            selcted_postprocessing_strategy = input("\n seleccione la funcionalidad de postprocesado \n")
+
+
+
+            match selcted_postprocessing_strategy:
+                case "1":
+                    postprocess_strategy = SlidingWindowNormalizer(apply_alg)
+                        
+                case "2":
+                    llm_model = ModelFactory().load_llm(llm_provider, llm_model_name)
+                    postprocess_strategy = SemanticAnalyzer(llm_instance=llm_model, user_prompt= user_prompt)
             
 
             pipeline = VLMPipeline(
@@ -141,7 +151,7 @@ class CLIModelTester:
                 provider_name=vlm_provider, 
                 message_strategy=msg_strategy, 
                 processing_strategy=process_strategy, 
-                postprocessing_strategy=semantic_resum
+                postprocessing_strategy=postprocess_strategy
             ) 
             
         

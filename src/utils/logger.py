@@ -4,14 +4,14 @@ import os
 
 def get_logger(name: str):
     """
-    Configura y devuelve un logger estandarizado. 
-    Imprime en consola (INFO+) y guarda en archivo (DEBUG+).
+    Configura y devuelve un logger que  
+    imprime en consola (INFO+) y guarda en archivo (DEBUG+).
     """
     logger = logging.getLogger(name)
     
-    # Solo configurar el logger si no tiene handlers ya asignados 
+    # solo configurar el logger si no tiene handlers ya asignados 
     if not logger.handlers:
-        # decirle al logger que acepte TODOS los mensajes
+        # decirle al logger que acepte tods los mensajes
         logger.setLevel(logging.DEBUG) 
 
         # formato: [FECHA-HORA] [NIVEL] [ARCHIVO] - Mensaje
@@ -28,14 +28,14 @@ def get_logger(name: str):
         console_handler.setFormatter(formatter)
         logger.addHandler(console_handler)
 
-        #  handler para el archivo ( historial en disco)
+        #  handler para el archivo (historial en disco)
         log_dir = "logs"
         if not os.path.exists(log_dir):
             os.makedirs(log_dir)
             
         file_handler = logging.FileHandler(os.path.join(log_dir, "app.log"), encoding="utf-8")
         
-        # Al archivo enviar TODO (DEBUG para arriba)
+        # Al archivo enviar todo (DEBUG para arriba)
         file_handler.setLevel(logging.DEBUG) 
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
