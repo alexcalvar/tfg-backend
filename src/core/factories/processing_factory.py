@@ -10,6 +10,10 @@ from src.core.output_parsers.base_parser import BaseFrameParser
 
 from src.utils.config_loader import ConfigLoader
 
+from src.utils.logger import get_logger
+
+logging = get_logger(__name__)
+
 
 class ProcessingFactory:
     
@@ -22,6 +26,7 @@ class ProcessingFactory:
         try:
             strategy_selected = StrategyType(strategy_selected)
         except ValueError:
+            logging.exception(f"Estrategia de procesamiento no soportada : {strategy_selected}")
             raise ValueError(f"Estrategia de procesamiento no soportada: {strategy_selected}")
 
         parser = self._create_parser()
@@ -35,7 +40,9 @@ class ProcessingFactory:
                 return TemporalStrategy(parser)
             
             case _:
+                logging.exception(f"Estrategia de procesamiento {strategy_selected} no soportada ")
                 raise ValueError(f"[ERROR] Estrategia de procesamiento {strategy_selected} no soportada ")
+                
             
 
     def _create_parser(self) -> BaseFrameParser:
@@ -46,14 +53,14 @@ class ProcessingFactory:
         try:
             parser_selected = ParserType(parser_str)
         except ValueError:
-            print(f" [ALERTA] Parser '{parser_str}' no reconocido en config. Usando JSON por defecto.")
+            logging.exception(f" Parser '{parser_str}' no reconocido en config. Usando JSON por defecto.")
             parser_selected = ParserType.JSON
         
         match parser_selected:
             case ParserType.TEXT:
-                print(" [INFO] Construyendo sistema con Parser de Texto Libre (Sí/No)")
+                logging.info("Construyendo sistema con Parser de Texto Libre (Sí/No)")
                 return YesNoTextParser()
             
             case ParserType.JSON:
-                print(" [INFO] Construyendo sistema con Parser JSON Estricto")
+                logging.info("Construyendo sistema con Parser JSON Estricto")
                 return JsonFrameParser()

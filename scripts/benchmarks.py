@@ -11,7 +11,6 @@ from src.core.factories.algorithm_factory import AlgorithmFactory
 from src.core.factories.processing_factory import ProcessingFactory
 from src.data.dataset_loader import DatasetLoader
 
-# Importamos tu clase que hace los cálculos matemáticos (Precision, Recall, etc.)
 from src.evaluation.benchmark_runner import BenchmarkRunner
 
 class AutomatedBenchmarkSuite:
@@ -19,14 +18,14 @@ class AutomatedBenchmarkSuite:
         load_dotenv()
         self.dataset_loader = DatasetLoader()
         
-        # Configuración de rutas (Ajusta si la estructura de carpetas cambia)
+        # Configuración de rutas 
         self.directorio_raiz = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
         self.gt_file = os.path.join(self.directorio_raiz, "datasets", "benchmarks", "ground_truth.json")
 
         self.output_dir = os.path.join(self.directorio_raiz, "datasets", "benchmarks", "reports")
         
-        # Aseguramos que la carpeta de reportes exista
+        # asegurar que la carpeta de reportes exista
         os.makedirs(self.output_dir, exist_ok=True)
         
         self.resultados_globales = []
@@ -64,12 +63,11 @@ class AutomatedBenchmarkSuite:
             print(f"   Modelo: {exp['modelo']} | Estrategia: {exp['estrategia']}")
             
             try:
-                # 1. Fabricamos las dependencias específicas de este experimento
+                
                 algoritmo_normalizacion = AlgorithmFactory().create_algorithm(exp["apply_alg"])
                 vlm_model, msg_strategy = ModelFactory().load_vlm(exp["proveedor"], exp["modelo"])
                 process_strategy = ProcessingFactory().create_strategy(exp["estrategia"])
                 
-                # 2. Ensamblamos el Pipeline
                 pipeline = VLMPipeline(
                     model_instance=vlm_model,
                     provider_name=exp["proveedor"],
@@ -78,14 +76,14 @@ class AutomatedBenchmarkSuite:
                     temporal_normalizer=algoritmo_normalizacion
                 )
                 
-                # 3. Conectamos el Evaluador y lanzamos
+                # conectar el evaluador y lanzar
                 # ---validacion de rita ---
                 ruta_video_absoluta = os.path.join(self.directorio_raiz, "datasets", "videos_test", exp["video"])
                 
                 if not os.path.exists(ruta_video_absoluta):
                     raise FileNotFoundError(f"No se encuentra el archivo de vídeo en: {ruta_video_absoluta}")
                 
-                # 3. Conectamos el Evaluador y lanzamos
+                
                 runner = BenchmarkRunner(self.dataset_loader, pipeline)
                 resultados = await runner.evaluate_video(
                     video_filename=ruta_video_absoluta,  
@@ -94,7 +92,7 @@ class AutomatedBenchmarkSuite:
                     gt_format="simple_json",
                 )
 
-                # 4. Guardamos las métricas en memoria para el CSV
+                
                 metricas = resultados.get("binary_metrics", {})
                 
                 print(f"   ÉXITO -> F1-Score: {metricas.get('f1_score', 0):.4f} | Precisión: {metricas.get('precision', 0):.4f}")
@@ -113,7 +111,7 @@ class AutomatedBenchmarkSuite:
                 })
 
             except Exception as e:
-                # Si un modelo falla (ej. se cuelga Ollama), capturamos el error y pasamos al siguiente
+                # Si un modelo falla , capturar el error y pasar al siguiente
                 print(f"   ERROR CRÍTICO en {exp['id_experimento']}: {e}")
                 self.resultados_globales.append({
                     "ID_Experimento": exp["id_experimento"],
@@ -139,9 +137,9 @@ class AutomatedBenchmarkSuite:
         nombre_archivo = f"benchmark_report_{timestamp}.csv"
         ruta_reporte = os.path.join(self.output_dir, nombre_archivo)
         
-        # Usamos Pandas para generar el archivo tabular
+        # usar pandas para generar el archivo tabular
         df = pd.DataFrame(self.resultados_globales)
-        df.to_csv(ruta_reporte, index=False, sep=";") # sep=";" facilita abrirlo en Excel en español
+        df.to_csv(ruta_reporte, index=False, sep=";") # sep=";" facilita abrirlo en excel en español
         
         print("\n" + "="*60)
         print(f"  SUITE FINALIZADA.")

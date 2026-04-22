@@ -2,7 +2,8 @@ import os
 
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form, BackgroundTasks
 
-from src.core.postprocessing_algorithms.temporal_normalizer import TemporalNormalizer
+from src.postprocessing.resums_logic.semantic_processor import SemanticAnalyzer
+from src.postprocessing.postprocessing_algorithms.temporal_normalizer import TemporalNormalizer
 from src.core.pipeline import VLMPipeline
 from src.core.factories.model_factory import ModelFactory
 from src.core.factories.processing_factory import ProcessingFactory
@@ -57,6 +58,53 @@ async def analyze_video(
             "video_file": video.filename
         }
     )
+
+
+
+@endpoints.post("/api/v1/resums", response_model=HTTPResponse, status_code=202)
+async def analyze_video(
+    background_tasks: BackgroundTasks,
+    video: UploadFile = File(...),
+    user_prompt: str = Form(...),
+    vlm_provider: str = Form(...), 
+    vlm_model_name: str = Form(...),
+    llm_provider: str = Form(...), 
+    llm_model_name: str = Form(...),
+    processing_mode: str = Form(...),
+    
+):
+    if not video.content_type.startswith("video/"):
+        raise HTTPException(status_code=400, detail="El archivo debe ser un formato de vídeo válido.")
+
+    try:
+        vlm_solicitado, msg_strategy = ModelFactory().load_vlm(vlm_provider, vlm_model_name)
+        llm_solicitado = ModelFactory().load_llm(llm_provider, llm_model_name)
+        processing_strategy = ProcessingFactory().create_strategy(processing_mode)
+        postprocessing = SemanticAnalyzer(llm_instance=llm_solicitado, user_prompt=user_prompt)
+
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error al cargar el modelo: {str(e)}")
+
+    pipeline = VLMPipeline(vlm_solicitado, vlm_provider, msg_strategy, processing_strategy, postprocessing)
+    
+    video_path_destino = os.path.join(pipeline.video_dir, video.filename)
+    
+    await save_upload_file(video, video_path_destino)   #tambien se almacena el video en la carpeta del proyecto correspondiente
+
+    background_tasks.add_task(pipeline.process_video, video_path_destino, user_prompt)
+
+    return HTTPResponse(
+        success=True,
+        message="El archivo se ha guardado correctamente y el análisis ha comenzado.",
+        data={
+            "status": "processing",
+            "project_id": os.path.basename(pipeline.base_run_dir),
+            "video_file": video.filename
+        }
+    )
+
+
+
 
 
 @endpoints.get("/api/v1/status/{project_id}", response_model=HTTPResponse, status_code=200)

@@ -1,7 +1,11 @@
 from src.data.enums import NormalizerAlgorithm
 from src.utils.config_loader import ConfigLoader
-from src.core.postprocessing_algorithms.temporal_normalizer import TemporalNormalizer
-from src.core.postprocessing_algorithms.sliding_window import SlidingWindowNormalizer
+from src.postprocessing.postprocessing_algorithms.temporal_normalizer import TemporalNormalizer
+from src.postprocessing.postprocessing_algorithms.sliding_window import SlidingWindowNormalizer
+
+from src.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class AlgorithmFactory:
@@ -18,6 +22,7 @@ class AlgorithmFactory:
         try:
             algorithm_selected = NormalizerAlgorithm(algorithm_selected)
         except ValueError:
+            logger.exception(f"Algoritmo de postprocesamiento no soportado: {algorithm_selected}")
             raise ValueError(f"Algoritmo de postprocesamiento no soportado: {algorithm_selected}")
         
         match algorithm_selected:

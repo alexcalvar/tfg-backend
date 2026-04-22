@@ -12,14 +12,18 @@ from src.utils.video_utils import VideoLoader
 from src.utils.config_loader import ConfigLoader
 
 from src.core.image_processor import VLMProcessor
-from src.core.postprocessing_algorithms.temporal_normalizer import TemporalNormalizer
+from src.postprocessing.postprocessing_mode import PostProcessingStrategy
 
 from src.observer.status_manager import ProjectStatusManager
+
+from src.utils.logger import get_logger
+
+logging = get_logger(__name__)
 
 class VLMPipeline:
 
     def __init__(self, model_instance, provider_name, message_strategy : MessageStrategy, 
-                 processing_strategy: ProcessingStrategy, temporal_normalizer : TemporalNormalizer):
+                 processing_strategy: ProcessingStrategy, postprocessing_strategy : PostProcessingStrategy):
         
         self.config = ConfigLoader()
         self.vlm = model_instance
@@ -38,7 +42,7 @@ class VLMPipeline:
         self.processing_strategy.attach(self.status_manager)
 
         self.processor = VLMProcessor(self.vlm, self.message_strategy, self.system_prompt)
-        self.normalizer = temporal_normalizer
+        self.postprocessing_strategy = postprocessing_strategy
 
 
 
@@ -87,29 +91,7 @@ class VLMPipeline:
         
         #usuario decide aplicar algoritmo de normalizacion
         #normalizar los resultados
-        #eventos_definidos = self.normalizer.process_and_group(resultados_acumulados)
-
-        #**************************BLOQUE PARA PRUEBAS DEL ALGORITMO*******************#
-        #de esta forma se ve el antes y despues de aplicar el algoritmo pero la finalidad es utilizar el metodo process_and_group()
-        #que 
-        if self.normalizer.apply:
-            post_normalizacion = self.normalizer._apply_sliding_window(resultados_acumulados)
-
-            normalizacion_file_path = os.path.join(self.results_dir, "postnormalizacion.json")
-            save_results(post_normalizacion, normalizacion_file_path)
-            print(f" Archivo tras aplicar algoritmo guardados en: {self.results_dir}")
-            
-            eventos_definidos = self.normalizer._extract_intervals(post_normalizacion)
-        else:
-            #si no se decide aplicar algoritmo de normalizacion
-            eventos_definidos = self.normalizer._extract_intervals(resultados_acumulados)
-
-        
-        #******************************************************************************#
-
-        events_file_path = os.path.join(self.results_dir, "intervalos.json")
-        save_results(eventos_definidos, events_file_path)
-        print(f" Intervalos guardados en: {self.results_dir}")
+        self.postprocessing_strategy.execute(resultados_acumulados, self.results_dir)
 
         self.status_manager.update_status(ProjectStatus.COMPLETED, "Análisis finalizado con éxito.", total_frames)
 

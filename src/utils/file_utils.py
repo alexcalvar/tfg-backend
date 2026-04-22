@@ -30,16 +30,30 @@ def save_json(data: list | dict, file_path: str):
 
 
 
-def save_results(data_models: list, file_path: str):
+def save_results(data, file_path: str):
     """
-    Convierte una lista de objetos de dominio (pydantic) a diccionarios
-    y utiliza save_json para almacenarlos en disco
+    Guarda datos en un archivo JSON. Es capaz de procesar listas de modelos Pydantic, 
+    modelos individuales o diccionarios nativos.
     """
-    # extraer datos crudos usando model_dump() 
-    datos_dict = [item.model_dump() for item in data_models]
-    
-    # reutilizar la función base 
-    save_json(datos_dict, file_path)
+    # asegurar q la carpeta existe
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+    # detectar q tipo de dato es 
+    if isinstance(data, list) and len(data) > 0 and hasattr(data[0], "model_dump"):
+        # es una lista de Pydantic models 
+        datos_a_guardar = [item.model_dump() for item in data]
+        
+    elif hasattr(data, "model_dump"):
+        # es un único Pydantic model 
+        datos_a_guardar = data.model_dump()
+        
+    else:
+        # es un diccionario o una lista normal 
+        datos_a_guardar = data
+
+    # guardar archivo
+    with open(file_path, "w", encoding="utf-8") as f:
+        json.dump(datos_a_guardar, f, indent=4, ensure_ascii=False)
 
 
 

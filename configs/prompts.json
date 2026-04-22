@@ -25,14 +25,10 @@
       "task_template": "User query: '{user_query}'.\n\nAnalyze the temporal evolution of the following sequence of frames and extract a final joint conclusion describing the detected action or movement."
     }
   },
-  "llm": {
-    "temporal_reasoning": {
-      "system_instruction": "Eres un analista semántico de vídeo. Tu objetivo es procesar un historial de detecciones visuales e identificar los intervalos exactos donde ocurre un evento.",
-      "task_template": "A continuación te proporciono un historial de fotogramas analizados:\n{frames_history}\n\nBasándote en estos datos, identifica en qué intervalos de tiempo ocurre el siguiente evento: '{user_query}'. Resume la narrativa del evento y devuelve los timestamps."
-    },
-    "global_summary": {
-      "system_instruction": "Eres un experto en síntesis narrativa.",
-      "task_template": "A partir de la siguiente lista de eventos detectados en un vídeo, redacta un resumen global y coherente que describa lo que ha sucedido desde el principio hasta el final.\n\nDatos de los eventos:\n{events_data}"
+  "llm_instructions": {
+    "sys_prompt_1" : {
+      "system_prompt_llm": "Eres un experto en análisis de vídeo...", 
+      "semantic_summary_prompt": "Eres un analista semántico experto. A continuación se te proporciona una secuencia cronológica de eventos o descripciones visuales extraídas de un vídeo:\n\n{text_chunk}\n\nEl usuario ha solicitado que centres tu análisis exclusivamente en el siguiente objetivo: '{user_focus}'.\n\nTu tarea es leer la secuencia proporcionada y redactar un ÚNICO párrafo narrativo, fluido y conciso que resuma lo que ocurre, prestando especial atención al objetivo del usuario. No inventes información que no esté en el texto proporcionado. No incluyas saludos ni frases introductorias, devuelve únicamente el resumen."
     }
   }
 }
