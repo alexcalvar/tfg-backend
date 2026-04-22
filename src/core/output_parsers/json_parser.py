@@ -2,6 +2,10 @@ import json
 from src.core.output_parsers.base_parser import BaseFrameParser
 from src.data.validators import FrameResults, FramesPath
 
+from src.utils.logger import get_logger
+
+logger = get_logger(__name__)
+
 class JsonFrameParser(BaseFrameParser):
     
     def get_format_instructions(self) -> str:
@@ -79,7 +83,7 @@ class JsonFrameParser(BaseFrameParser):
         try:
             return json.loads(texto_limpio)
         except json.JSONDecodeError as e:
-            print(f"\n [DEBUG PARSER] El VLM no devolvió JSON válido:\n{texto_limpio}\n")
+            logger.error(f"El VLM no devolvió JSON válido:\n{texto_limpio}")
             raise ValueError(f"Error decodificando JSON: {e}")
 
 
@@ -108,11 +112,11 @@ class JsonFrameParser(BaseFrameParser):
         """Asegura que la estructura resultante es válida para empaquetarla."""
         
         if not isinstance(lista_diccionarios, list):
-            print(f"\n [ERROR PARSER] Estructura devuelta por el VLM no soportada:\n{texto_original}\n")
+            logger.error(f"Estructura devuelta por el VLM no soportada:\n{texto_original}")
             raise ValueError(f"El VLM no devolvió una lista válida. Recibido: {type(lista_diccionarios)}")
             
         if len(lista_diccionarios) != tamano_esperado:
-            print(f"\n [ERROR PARSER] Desajuste de tamaño. VLM devolvió:\n{texto_original}\n")
+            logger.error(f"Desajuste de tamaño. VLM devolvió {len(lista_diccionarios)} resultados (esperados: {tamano_esperado}):\n{texto_original}")
             raise ValueError(f"Desajuste: El modelo devolvió {len(lista_diccionarios)} resultados, pero el lote tiene {tamano_esperado} imágenes.")
 
 

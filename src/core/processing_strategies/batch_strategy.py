@@ -9,6 +9,10 @@ from src.core.output_parsers.base_parser import BaseFrameParser
 from src.utils.file_utils import load_json
 from src.utils.project_status import ProjectStatus
 
+from src.utils.logger import get_logger
+
+logger = get_logger(__name__)
+
 class BatchStrategy(ProcessingStrategy):
 
 
@@ -43,11 +47,11 @@ class BatchStrategy(ProcessingStrategy):
             frames_to_analyze = await self._extract_batch(queue, FRAMES_PER_BATCH)
 
             if not frames_to_analyze: 
-                print("Fin de la extracción detectado. Cerrando procesador.")
+                logger.info("Fin de la extracción detectado. Cerrando procesador.")
                 break      
 
             if len(frames_to_analyze) < FRAMES_PER_BATCH :
-                print("Iniciando proceso de ultimo batch (tamaño inferior al general)")
+                logger.info("Iniciando proceso de último batch (tamaño inferior al general)")
                 flag = False
 
             ultimo_frame_id = frames_to_analyze[-1].frame_id 
@@ -95,17 +99,17 @@ class BatchStrategy(ProcessingStrategy):
             # guardar resultados
             for frame_result in resultados_parseados:
                 resultados.append(frame_result)
-                print(f" Terminado: frame_{frame_result.frame_id}")
+                logger.info(f"Terminado: frame_{frame_result.frame_id}")
 
         except Exception as e: 
-            print(f" Error analizando el batch o de formato: {e}")
+            logger.error(f"Error analizando el batch o de formato: {e}")
             await self._handle_batch_failure(batch, resultados, queue, f"Fallo de sistema/parseo: {e}")
 
 
 
 
     async def _handle_batch_failure(self, batch: list[FramesPath], resultados: list, queue: asyncio.Queue, motivo: str):
-        print(f" [ALERTA] Reintentando batch debido a: {motivo}")
+        logger.warning(f"Reintentando batch debido a: {motivo}")
         for frame_obj in batch:
             intentos_restantes = frame_obj.intentos - 1
             if intentos_restantes > 0:
