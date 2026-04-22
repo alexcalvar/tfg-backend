@@ -42,7 +42,6 @@ class BenchmarkRunner:
         return self._calcular_y_guardar(ruta_report_ia, gt_file_path, gt_format, project_dir)
 
     # --- MÉTODO PRIVADO (El Motor Matemático) ---
-    # --- MÉTODO PRIVADO (El Motor Matemático) ---
     def _calcular_y_guardar(self, ruta_report_ia: str, gt_file_path: str, gt_format: str, output_dir: str):
         """Carga los JSONs, los fusiona y calcula las métricas. Reutilizable para ambos enfoques."""
         resultados_ia = load_json(ruta_report_ia) 
@@ -50,11 +49,10 @@ class BenchmarkRunner:
         
         evaluaciones = []
         for res_ia in resultados_ia:
-            # 1. Extraemos el ID numérico del frame desde el JSON del modelo
-            # (Usamos .get() con valores por defecto por seguridad)
+            
             frame_id = res_ia.get("frame_id", -1) 
             
-            # 2. Reconstruimos el nombre tal y como está en el Ground Truth
+            
             nombre_frame = f"frame_{frame_id}.jpg"
             
             if nombre_frame not in ground_truth_dict:

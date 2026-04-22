@@ -3,6 +3,10 @@ import os
 
 from src.utils.file_utils import save_json 
 
+from src.utils.logger import get_logger
+
+logger = get_logger(__name__)
+
 class ConfigLoader:
     _instance = None
 
@@ -24,7 +28,7 @@ class ConfigLoader:
             raise FileNotFoundError(f"[ERROR] El ConfigLoader no encuentra el archivo en: {ruta_absoluta}")
         
         self.config.read(ruta_absoluta, encoding="utf-8")
-        print(f"  Configuración cargada con éxito desde: {config_path}")
+        logger.info(f"Configuración cargada con éxito desde: {config_path}")
     
 
 
@@ -71,4 +75,4 @@ class ConfigLoader:
         """
         config_data = self.get_all_config_as_dict()
         save_json(config_data, output_path)
-        print(f" [SISTEMA] Configuración guardado en: {output_path}")
+        logger.info(f"Configuración de ejecución exportada y guardada en: {output_path}")

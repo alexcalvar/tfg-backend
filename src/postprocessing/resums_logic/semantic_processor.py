@@ -13,6 +13,7 @@ from src.utils.file_utils import load_json, save_results
 
 from src.utils.logger import get_logger
 
+
 logger = get_logger(__name__)
 
 class SemanticAnalyzer(PostProcessingStrategy):
@@ -24,6 +25,8 @@ class SemanticAnalyzer(PostProcessingStrategy):
         
         self.config = ConfigLoader()
         self.system_prompt = self.load_sys_prompts()
+        
+        logger.info("Inicializando SemanticAnalyzer...")
 
 
     def load_sys_prompts(self) -> str:
@@ -33,15 +36,18 @@ class SemanticAnalyzer(PostProcessingStrategy):
         sys_prompt_key = self.config.get_sys_config("semantic_sys_prompt")
         
         base_system_prompt = config_prompts[categoria_prompts][sys_prompt_key]["semantic_summary_prompt"]
-
         return base_system_prompt
 
 
 
     def execute(self, raw_results: List[FrameResults], results_dir: str) -> SummaryNode:
+        logger.info("=== Iniciando Post-Procesamiento Semántico  ===")
+        
         base_nodes = self._build_base_nodes(raw_results)
         root = self._build_summary_tree(base_nodes)
         self._save_results(root, results_dir)
+        
+        logger.info(f"=== Análisis Semántico Completado. Nodo Raíz: {root.id} ===")
         return root
 
 
@@ -49,12 +55,12 @@ class SemanticAnalyzer(PostProcessingStrategy):
     def _build_base_nodes(self, raw_results: List[FrameResults]) -> List[SummaryNode]:
         """ Convierto los FrameResults extraidos de la respuesta del modelo en los nodos base para 
         la logica de resumenes del arbol de resumenes"""
+        logger.info(f"Construyendo base de la pirámide (Nivel 0) con {len(raw_results)} fotogramas...")
         interval = self.config.get_video_float("frame_interval")
 
         nodes = []
 
         for frame in raw_results:
-
             node = SummaryNode(
                 id=f"L0_{frame.frame_id}",
                 nivel=0,
@@ -65,7 +71,6 @@ class SemanticAnalyzer(PostProcessingStrategy):
                 end_timestamp=frame.frame_id * interval,
                 children=[]
             )
-
             nodes.append(node)
 
         return nodes
@@ -77,8 +82,15 @@ class SemanticAnalyzer(PostProcessingStrategy):
         batch_size = self.config.get_sys_config_int("descrip_per_batch")
         level = 1
 
+        logger.info(f"Iniciando compresión del árbol. Lotes de tamaño: {batch_size}")
+
         while len(nodes) > 1:
+            logger.info(f"--- Subiendo al Nivel {level} ---")
+            logger.info(f"Nodos a comprimir en este nivel: {len(nodes)}")
+            
             nodes = self._reduce_level(nodes, batch_size, level)
+            
+            logger.info(f"Nivel {level} completado. Nodos resultantes: {len(nodes)}")
             level += 1
 
         return nodes[0]
@@ -86,32 +98,24 @@ class SemanticAnalyzer(PostProcessingStrategy):
 
 
     def _reduce_level(self, nodes: List[SummaryNode], batch_size: int, level: int) -> List[SummaryNode]:
-        """ Procesa una altura horizontal del arbol, agrupando los nodos de esa altura en lotes para luego enviar al 
-        lllm"""        
+        """ Procesa una altura horizontal del arbol, agrupando los nodos de esa altura en lotes para luego enviar al lllm"""        
         next_level = []
         indice_lote = 0 
 
-        # se recorre la lista saltando de lote en lote
         for i in range(0, len(nodes), batch_size):
-            
-            # obtener el grupo de nodos del batch 
-            # en el ultimo lote si no se completa, se forma con los nodos restantes
             batch = nodes[i : i + batch_size]
+            
+            logger.info(f"Procesando lote {indice_lote + 1} del Nivel {level} (Contiene {len(batch)} hijos)...")
 
-            # enviar el lote al llm
             summary = self._summarize_nodes(batch, level, indice_lote)
-
-            # crear el nodo padre del lote de nodos hijos
             nodo_padre = self._create_parent_node(batch, summary, level, indice_lote)
             
-            #almacenar el nodo padre en su altura del arbol correspondiente
             next_level.append(nodo_padre)
-
-            #incrementamos indice para el siguiente
             indice_lote += 1
 
         return next_level
     
+
     def _create_parent_node(self,batch: List[SummaryNode],summary: str,level: int,index: int) -> SummaryNode:
         """ Genera el nodo padre de un conjunto de nodos hijos, guardando el resumen global del 
         lote y una lista de los nodos hijos"""
@@ -133,14 +137,10 @@ class SemanticAnalyzer(PostProcessingStrategy):
 
     def _summarize_nodes(self, batch: List[SummaryNode], level: int, index: int) -> str:
         """ Coge todos los resumenes del lote y los junta para poder enviarselos al modelo posteriormente"""
-        
-        #agrupar los resumenes
         text = "\n".join(node.resumen for node in batch)
         node_id = f"L{level}_{index}"
         
-        #llamar al llm
         response = self._call_llm(text, node_id)
-
         return response
     
 
@@ -151,7 +151,6 @@ class SemanticAnalyzer(PostProcessingStrategy):
         messages = [HumanMessage(content=prompt)]
 
         response =  self._retry_llm_call(messages, node_id)
-
         return response
     
 
@@ -171,27 +170,27 @@ class SemanticAnalyzer(PostProcessingStrategy):
 
     def _retry_llm_call(self, messages, node_id: str) -> str:
         """ LLama al modelo y devuelve la respuesta de este """
-
         max_retries = self.config.get_video_int("max_intents_frame")
 
         for attempt in range(max_retries):
             try:
+                
+                logger.debug(f"Pidiendo resumen a la IA para el nodo {node_id} (Intento {attempt+1})...")
+                
                 response = self.llm.invoke(messages)
                 return response.content
 
             except Exception as e:
                 wait_time = 2 ** attempt
-                logger.warning(f"LLM error {node_id} ({attempt+1}/{max_retries}): {e}")
+                logger.warning(f"Error de red/IA en nodo {node_id} (Intento {attempt+1}/{max_retries}). Reintentando en {wait_time}s... Error: {e}")
                 time.sleep(wait_time)
 
-        logger.error(f"LLM failed for {node_id}")
-        return f"[Error en {node_id}]"
+        logger.error(f"¡Fallo crítico! No se pudo resumir el nodo {node_id} tras {max_retries} intentos.")
+        return f"[Error en la generación del resumen para el bloque {node_id}]"
     
 
 
     def _save_results(self, root: SummaryNode, results_dir: str) -> None:
         path = os.path.join(results_dir, "summary_tree.json")
         save_results(root.model_dump(), path)
-
-
-
+        logger.info(f"Árbol de resúmenes guardado con éxito en: {path}")

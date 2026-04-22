@@ -11,6 +11,10 @@ from src.postprocessing.postprocessing_algorithms.sliding_window import SlidingW
 from src.postprocessing.resums_logic.semantic_processor import SemanticAnalyzer
 from src.utils.file_utils import load_json
 
+from src.utils.logger import get_logger
+
+logger = get_logger(__name__)
+
 class CLIModelTester:
     """Clase para ejecutar y probar modelos VLM en crudo por terminal, sin pasar por la API."""
     
@@ -19,17 +23,12 @@ class CLIModelTester:
         self.rutas_modelos = Path("configs/models_config.json")
         
         if not self.rutas_modelos.exists():
-            print(f" [ERROR FATAL] No se encuentra el archivo de configuración en {self.rutas_modelos}")
+            logger.critical(f"No se encuentra el archivo de configuración en {self.rutas_modelos}")
             self.config_modelos = {"vlms": {}}
         else:
             self.config_modelos = load_json(str(self.rutas_modelos))
 
 
-
-
-    # ==========================================
-    # MÉTODOS PRIVADOS DE MENÚ (CLI)
-    # ==========================================
 
     def _seleccionar_modelo(self) -> tuple[str, str]:
         """Muestra el menú de modelos y devuelve el proveedor y nombre seleccionados."""
@@ -62,7 +61,7 @@ class CLIModelTester:
                 raise IndexError()
             
             seleccion = opciones_menu[indice]
-            print(f" [INFO] Modelo seleccionado: {seleccion['id_modelo']} vía {seleccion['proveedor']}")
+            logger.info(f"Modelo seleccionado: {seleccion['id_modelo']} vía {seleccion['proveedor']}")
             return seleccion["proveedor"], seleccion["id_modelo"]
             
         except (ValueError, IndexError):
@@ -88,7 +87,7 @@ class CLIModelTester:
                 raise IndexError()
             
             seleccion = opciones_estrategia[indice]
-            print(f" [INFO] Estrategia seleccionada: {seleccion.name}")
+            logger.info(f"Estrategia seleccionada: {seleccion.name}")
             return seleccion.value
             
         except (ValueError, IndexError):
@@ -109,7 +108,7 @@ class CLIModelTester:
 
         ruta_video = os.path.join("datasets", "videos_test", video_name)
         if not os.path.exists(ruta_video):
-            print(f"  [ERROR] No encuentro el vídeo en: {ruta_video}")
+            logger.error(f"No encuentro el vídeo en la ruta especificada: {ruta_video}")
             return
 
         try:
@@ -124,16 +123,18 @@ class CLIModelTester:
             apply_alg = False
             
             # Ensamblaje de dependencias
-            print("\n  Arrancando motores de IA...")
+            logger.info("==========INICIANDO EJECUCION CON CLI ================")
+            logger.info("Arrancando motores de IA y ensamblando dependencias...")
 
             
             vlm_model, msg_strategy = ModelFactory().load_vlm(vlm_provider, vlm_model_name)
             process_strategy = ProcessingFactory().create_strategy(selected_process_stry)
 
             #acordarse de cambiar por el factory
-            print("1 - DETECCION DE EVENTOS")
-            print("2 - LOGICA DE RESUMENES")
-            selcted_postprocessing_strategy = input("\n seleccione la funcionalidad de postprocesado \n")
+            print("\n--- PASO 3: SELECCIÓN DE POST-PROCESAMIENTO ---")
+            print("  1 - DETECCION DE EVENTOS (Sliding Window)")
+            print("  2 - LOGICA DE RESUMENES (Semantic Analyzer)")
+            selcted_postprocessing_strategy = input("\n  Seleccione la funcionalidad de postprocesado: ")
 
 
 
@@ -157,14 +158,13 @@ class CLIModelTester:
         
             #  Ejecución del análisis
             await pipeline.process_video(ruta_video, user_prompt)
-            print("\n  Prueba finalizada con éxito. Revisa la carpeta de proyectos.")
+            logger.info("Prueba finalizada con éxito. Revisa la carpeta de proyectos.")
         
         except ValueError as ve:
-            print(f"  [CANCELADO] {ve} Saliendo del sistema...")
+            logger.warning(f"Ejecución cancelada por el usuario o validación: {ve}")
         except Exception as e:
-            print(f"  [CRÍTICO] Error en la ejecución del pipeline: {e}")
-            import traceback
-            traceback.print_exc()
+            # logger.exception captura automáticamente el Traceback entero sin necesidad de importarlo
+            logger.exception(f"Error crítico en la ejecución del pipeline: {e}")
 
 
 

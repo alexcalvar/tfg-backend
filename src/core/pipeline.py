@@ -18,7 +18,7 @@ from src.observer.status_manager import ProjectStatusManager
 
 from src.utils.logger import get_logger
 
-logging = get_logger(__name__)
+logger = get_logger(__name__)
 
 class VLMPipeline:
 
@@ -64,7 +64,7 @@ class VLMPipeline:
 
         cola_frames = asyncio.Queue()
         
-        print("Extracción de frames ...")
+        logger.info("Iniciando extracción de frames del vídeo...")
         productor_task = asyncio.create_task(video_engine.extract_frames(interval_time, cola_frames))
 
         resultados_acumulados : list[FrameResults] = []
@@ -72,7 +72,7 @@ class VLMPipeline:
 
         await productor_task
 
-        # Orquestador avisa manualmente a la cola de que no hay más frames
+        # orquestador avisa manualmente a la cola de que no hay más frames
         cola_frames.put_nowait(None)
         
         self._save_execution_config(file_name, prompt_usuario, total_frames)
@@ -86,7 +86,7 @@ class VLMPipeline:
         
         results_file_path = os.path.join(self.results_dir, "report.json")
         save_results(resultados_acumulados, results_file_path)
-        print(f" Informe guardado en: {self.results_dir}")
+        logger.info(f"Informe de frames guardado exitosamente en: {self.results_dir}")
 
         
         #usuario decide aplicar algoritmo de normalizacion
@@ -116,7 +116,7 @@ class VLMPipeline:
         ensure_dir(self.frames_dir)
         ensure_dir(self.results_dir)
         
-        print(f" Nueva ejecución creada en: {self.base_run_dir}")
+        logger.info(f"Nueva ejecución aislada creada en: {self.base_run_dir}")
 
 
 
@@ -149,13 +149,12 @@ class VLMPipeline:
         
         config_path = os.path.join(self.base_run_dir, "execution_config.json")
         save_json(config_data, config_path)
+        logger.info(f"Configuración de ejecución guardada en: {config_path}")
 
 
 
 
     async def _analizar_frames(self, cola_frames: asyncio.Queue, prompt_usuario: str, resultados: list):
 
-        print("Delegando consumo de la cola a la estrategia de procesamiento ...")
+        logger.info("Delegando consumo de la cola a la estrategia de procesamiento visual...")
         await self.processing_strategy.process_queue(self.processor,prompt_usuario, cola_frames, resultados)
-
-            

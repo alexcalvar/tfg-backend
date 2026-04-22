@@ -7,6 +7,10 @@ from src.utils.config_loader import ConfigLoader
 from src.utils.file_utils import ensure_dir
 from src.data.validators import FramesPath
 
+from src.utils.logger import get_logger
+
+logger = get_logger(__name__)
+
 class VideoLoader:
     def __init__(self, video_path, output_folder):
         self.config = ConfigLoader()
@@ -20,21 +24,17 @@ class VideoLoader:
 
         if cap.isOpened():
             fps = cap.get(cv2.CAP_PROP_FPS)
-
             total_frames = cap.get(cv2.CAP_PROP_FRAME_COUNT)
-            
             
             if fps > 0:
                 duration = total_frames / fps
             else:
                 duration = 0
                 
-            print(f" DEBUG INFO:")
-            print(f"   - FPS detectados: {fps}")
-            print(f"   - Frames Totales: {total_frames}")
-            print(f"   - Duración calculada: {duration:.2f} segundos")
+            # Agrupamos la info en una sola línea de log elegante
+            logger.info(f"Info de Vídeo -> FPS: {fps:.2f} | Frames Totales: {total_frames} | Duración: {duration:.2f}s")
             
-            step =math.ceil(fps * interval)
+            step = math.ceil(fps * interval)
             
             #captura de fotogramas
             n_frame = 0
@@ -65,7 +65,8 @@ class VideoLoader:
 
                 await cola_frames.put(paquete_frame) # se almacena la ruta en la cola para q luego el procesador acceda a la ruta del framse
 
-                print(f"guardado frame nº {count_frame} (Posición real: {n_frame} - Optimizado)")
+                # Usamos DEBUG para no inundar la consola si el vídeo es muy largo
+                logger.debug(f"Guardado frame nº {count_frame} (Posición real: {n_frame} - Optimizado)")
 
                 n_frame += step
                 count_frame += 1
@@ -80,6 +81,7 @@ class VideoLoader:
                 await asyncio.sleep(0)  
 
         cap.release()
+        logger.info(f"Extracción finalizada. Total de frames enviados a la cola: {count_frame}")
         
 
     def get_expected_frame_count(self, interval: float) -> int:
@@ -98,6 +100,3 @@ class VideoLoader:
             if step > 0:
                 return math.ceil(total_video_frames / step) 
         return 0
-
-
-

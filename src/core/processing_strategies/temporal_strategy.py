@@ -10,6 +10,9 @@ from src.core.output_parsers.base_parser import BaseFrameParser
 from src.utils.file_utils import load_json
 from src.utils.project_status import ProjectStatus
 
+from src.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 INITIAL_CONTEXT_FRAMES  = 2 # frame actual  y futuro para el primer frame
 WINDOW_STEP  = 1            # avanzamos de 1 en 1 para mantener el solapamiento (t-1, t, t+1) centrandonos en analizar t
@@ -56,24 +59,24 @@ class TemporalStrategy(ProcessingStrategy):
 
         except Exception as e:
             
-            print(f"\n  [ERROR FATAL OCULTO EN LA ESTRATEGIA] Motivo: {e}")
+            logger.critical(f"ERROR FATAL OCULTO EN LA ESTRATEGIA TEMPORAL. Motivo: {e}")
             
             # liberar queue para que no se quede congelado
-            print(" [DEBUG] Forzando liberación de la queue por emergencia...")
+            logger.warning("Forzando liberación de la queue por emergencia...")
             while not queue.empty():
                 try:
                     queue.get_nowait()
                     queue.task_done()
 
                 except Exception as ex:
-                    print(f"Error liberando la queue {ex}")
+                    logger.error(f"Error liberando la queue: {ex}")
             queue.task_done() 
 
 
 
 
     async def _process_initial_phase(self, frame_buffer : list[FramesPath], processor: VLMProcessor, user_prompt: str, queue: asyncio.Queue, resultados: list) -> bool:
-        print("[AVISO] Comenzando fase de procesamiento : TEMPORAL-STRATEGY")
+        logger.info("Comenzando fase de procesamiento: TEMPORAL-STRATEGY")
         primera_extraccion = await self._extract_batch(queue, INITIAL_CONTEXT_FRAMES)
         if not primera_extraccion:
              return False
@@ -121,7 +124,7 @@ class TemporalStrategy(ProcessingStrategy):
 
         self.notify(ProjectStatus.ANALYZING, status_message, target_frame.frame_id)
         
-        print(f" [DEBUG] {status_message} - frame_{target_frame.frame_id}")
+        logger.info(f"{status_message} - frame_{target_frame.frame_id}")
         
         await self._process_batch_interno(processor, user_prompt, frame_buffer, target_frame, resultados)
 
@@ -137,7 +140,7 @@ class TemporalStrategy(ProcessingStrategy):
             frame_item = await queue.get() 
 
             if frame_item is None:
-                print(" [DEBUG] Flag de fin recibida. El vídeo ha terminado.")
+                logger.info("Flag de fin recibida. El vídeo ha terminado.")
                 # se vuelve a meter el none para no romper el join() del orquestador
                 queue.task_done()
 
@@ -170,13 +173,13 @@ class TemporalStrategy(ProcessingStrategy):
                 respuesta_validada = self.parser.parse(respuesta_bruta, target_frame.frame_id)
 
                 resultados.append(respuesta_validada)
-                print(f" Terminado análisis temporal para frame_{target_frame.frame_id}")
+                logger.info(f"Terminado análisis temporal para frame_{target_frame.frame_id}")
                 return 
 
             except Exception as e:
-                print(f" [AVISO] Intento {attempt}/{max_attempts} fallido procesando el frame_{target_frame.frame_id}: {e}")
+                logger.warning(f"Intento {attempt}/{max_attempts} fallido procesando el frame_{target_frame.frame_id}: {e}")
                 if attempt == max_attempts:
-                    print(f" [ERROR] Se agotaron los intentos para el frame_{target_frame.frame_id}")
+                    logger.error(f"Se agotaron los intentos para el frame_{target_frame.frame_id}")
                     resultados.append(self._generar_error_fallback(target_frame.frame_id, max_attempts, str(e)))
 
 

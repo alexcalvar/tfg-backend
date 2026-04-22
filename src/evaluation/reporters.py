@@ -40,9 +40,9 @@ class MetricsReporter:
         pdf.set_font("Arial", size=12)
         for key, value in binary_metrics.items():
             if key != "confusion_matrix":
-                # Limpiamos el nombre técnico (ej: 'f1_score' -> 'F1 Score')
+                
                 nombre_formateado = key.replace('_', ' ').title()
                 pdf.cell(200, 8, txt=f"{nombre_formateado}: {value}", ln=True)
         
-        # --- GUARDADO ---
+        
         pdf.output(output_path)

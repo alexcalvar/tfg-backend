@@ -2,6 +2,10 @@ import re
 from src.core.output_parsers.base_parser import BaseFrameParser
 from src.data.validators import FrameResults, FramesPath
 
+from src.utils.logger import get_logger
+
+logger = get_logger(__name__)
+
 class YesNoTextParser(BaseFrameParser):
     
     def get_format_instructions(self) -> str:
@@ -104,8 +108,9 @@ class YesNoTextParser(BaseFrameParser):
         # en caso de no encontradas en primera instancia porque el modelo no usó el formato exacto pero escupió 
         # líneas sueltas y texto introductorio, coger las ultimas n lineas
         if len(lineas) >= tamano_esperado:
+            logger.warning(f"El VLM añadió texto basura. Rescatando las últimas {tamano_esperado} líneas mediante heurística.")
             return lineas[-tamano_esperado:]
             
         # si no hay forma de arreglarlo, lanzar error para reintento del modleo
-        print(f"\n [DEBUG PARSER TEXTO] El VLM no devolvió suficientes líneas.\nTexto crudo:\n{texto_original}\n")
+        logger.error(f"El VLM no devolvió suficientes líneas de respuesta.\nTexto crudo recibido:\n{texto_original}")
         raise ValueError(f"Se esperaban {tamano_esperado} respuestas, pero solo se detectaron {len(lineas)} líneas.")
