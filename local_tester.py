@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from src.data.enums import StrategyType
 from src.core.pipeline import VLMPipeline 
 from src.core.factories.model_factory import ModelFactory
+from src.core.frame_providers.video_loader import VideoLoader
 from src.core.factories.processing_factory import ProcessingFactory
 from src.postprocessing.postprocessing_algorithms.sliding_window import SlidingWindowNormalizer
 from src.postprocessing.resums_logic.semantic_processor import SemanticAnalyzer
@@ -126,7 +127,7 @@ class CLIModelTester:
             logger.info("==========INICIANDO EJECUCION CON CLI ================")
             logger.info("Arrancando motores de IA y ensamblando dependencias...")
 
-            
+            frame_provider = VideoLoader()
             vlm_model, msg_strategy = ModelFactory().load_vlm(vlm_provider, vlm_model_name)
             process_strategy = ProcessingFactory().create_strategy(selected_process_stry)
 
@@ -149,7 +150,8 @@ class CLIModelTester:
 
             pipeline = VLMPipeline(
                 model_instance=vlm_model, 
-                provider_name=vlm_provider, 
+                provider_name=vlm_provider,
+                frame_provider= frame_provider, 
                 message_strategy=msg_strategy, 
                 processing_strategy=process_strategy, 
                 postprocessing_strategy=postprocess_strategy

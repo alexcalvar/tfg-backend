@@ -44,5 +44,6 @@ models/
 
 # --- LOGS Y CACHÉ DE TESTS ---
 *.log
+/logs
 .pytest_cache/
 htmlcov/

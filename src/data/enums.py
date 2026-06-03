@@ -26,5 +26,6 @@ class StrategyType(Enum):
     TEMPORAL = "temporal_strategy" 
 
 
-class PostProcessingStrategy(Enum):
-    pass
+class PostProcessingStr(Enum):
+    ALGORITHM = "algorithm"
+    SEMANTIC = "semantic"
