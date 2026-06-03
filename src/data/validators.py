@@ -14,6 +14,7 @@ class FramesPath:
     frame_id: int
     frame_path: str
     intentos: int
+    timestamp_sec: float
 
 class FrameResults(BaseModel):
     detectado: bool

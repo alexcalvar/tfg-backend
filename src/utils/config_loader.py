@@ -2,6 +2,7 @@ import configparser
 import os
 
 from src.utils.file_utils import save_json 
+from src.data.enums import PostProcessingStr
 
 from src.utils.logger import get_logger
 
@@ -76,3 +77,33 @@ class ConfigLoader:
         config_data = self.get_all_config_as_dict()
         save_json(config_data, output_path)
         logger.info(f"Configuración de ejecución exportada y guardada en: {output_path}")
+
+    
+
+    def get_status_file_path(self, project_id : str):
+        """ Devuelve la ruta del archivo de estado del procesamiento de un proyecto"""
+        projects_folder = self.get_path("projects_folder")
+        status_file = self.get_path("status_file")
+
+        return os.path.join(projects_folder,project_id, status_file)
+    
+
+    def _get_results_folder_path(self, project_id : str):
+        """ Devuelve la ruta del archivo de resultados del procesamiento de un proyecto"""
+        projects_folder = self.get_path("projects_folder")
+        results_folder = self.get_path("results_folder")
+
+        return os.path.join(projects_folder,project_id,results_folder)
+    
+    def get_results_file_path(self, project_id : str, file_type : PostProcessingStr):
+
+        result_folder = self._get_results_folder_path(project_id=project_id)
+
+        match file_type :
+            case PostProcessingStr.ALGORITHM:
+                result_file = self.get_path("events_file")
+
+            case PostProcessingStr.SEMANTIC:
+                result_file = self.get_path("resums_file")
+            
+        return os.path.join(result_folder, result_file)
