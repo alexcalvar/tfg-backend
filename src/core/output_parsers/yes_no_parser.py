@@ -47,12 +47,12 @@ class YesNoTextParser(BaseFrameParser):
         resultados = []
         for frame_obj, linea in zip(lote, lineas_utiles):
             detectado = self._extraer_booleano(linea)
-            #descripcion = self._limpiar_descripcion(linea)
+            descripcion = self._limpiar_descripcion(linea)
             
             resultados.append(FrameResults(
                 frame_id=frame_obj.frame_id,
                 detectado=detectado,
-                descripcion=linea
+                descripcion=descripcion
             ))
             
         return resultados

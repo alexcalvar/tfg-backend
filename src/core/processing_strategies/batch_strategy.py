@@ -113,7 +113,12 @@ class BatchStrategy(ProcessingStrategy):
         for frame_obj in batch:
             intentos_restantes = frame_obj.intentos - 1
             if intentos_restantes > 0:
-                await queue.put(FramesPath(frame_obj.frame_id, frame_obj.frame_path, intentos_restantes))
+                await queue.put(FramesPath(
+                    frame_id=frame_obj.frame_id, 
+                    frame_path=frame_obj.frame_path, 
+                    intentos=intentos_restantes,
+                    timestamp_sec=frame_obj.timestamp_sec  
+                ))
             else:
                 resultados.append(self._crear_resultado(frame_obj.frame_id, False, f"Error Crítico: {motivo}"))    
 
