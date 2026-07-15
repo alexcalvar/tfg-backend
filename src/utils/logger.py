@@ -35,7 +35,7 @@ def get_logger(name: str):
             
         file_handler = logging.FileHandler(os.path.join(log_dir, "app.log"), encoding="utf-8")
         
-        # Al archivo enviar todo (DEBUG para arriba)
+        # al archivo enviar todo (DEBUG para arriba)
         file_handler.setLevel(logging.DEBUG) 
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)

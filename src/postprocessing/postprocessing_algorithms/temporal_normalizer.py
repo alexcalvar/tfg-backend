@@ -10,15 +10,15 @@ from src.utils.file_utils import save_results
 
 class TemporalNormalizer(PostProcessingStrategy):
 
-    def __init__(self, apply_alg : bool):
+    def __init__(self, apply_alg : bool, interval : float):
         self.config = ConfigLoader()
-        self.interval_time = self.config.get_video_float("frame_interval")
+        self.interval_time = interval
         self.apply = apply_alg 
 
     def execute(self, raw_results: List[FrameResults], results_dir: str) -> Any:
         events = self.process_and_group(raw_results=raw_results)
 
-        events_file_path = os.path.join(results_dir, "intervalos.json")
+        events_file_path = os.path.join(results_dir, self.config.get_path("events_file"))
         save_results(events, events_file_path)
         
         return events

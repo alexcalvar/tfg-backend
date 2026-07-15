@@ -13,11 +13,11 @@ class ProcessingStrategy(StatusObservable):
     Al heredar de StatusObservable, todas las estrategias tienen el método self.notify().
     """
     
-    def __init__(self, parser : BaseFrameParser):
+    def __init__(self, parser: BaseFrameParser):
         # inicializa la lista de observadores
         StatusObservable.__init__(self) 
         
-        #  inicializa la configuración compartida
+        # inicializa la configuración compartida
         self.config = ConfigLoader()
         self.parser = parser
 
@@ -27,11 +27,11 @@ class ProcessingStrategy(StatusObservable):
         pass
 
     @abstractmethod
-    async def process_queue(self, processor: VLMProcessor, prompt_usuario: str, cola: asyncio.Queue, resultados: list) -> None:
-        """Consume la cola de frames y procesa según la lógica de la estrategia."""
+    async def process_queue(self, processor: VLMProcessor, prompt_usuario: str, cola: asyncio.Queue, resultados: list, cancel_event: asyncio.Event = None) -> None:
+       
         pass
 
     @abstractmethod
-    def _build_model_request(self, prompt_usuario : str, lote : list[FramesPath]):
-        """ Metodo para crear la peticion que recibira el modelo con el formato correspondiente al tipo de procesamiento"""
+    def _build_model_request(self, prompt_usuario: str, lote: list[FramesPath]):
+        
         pass

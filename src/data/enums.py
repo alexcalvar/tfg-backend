@@ -16,6 +16,7 @@ class LLMProvider(Enum):
 
 class NormalizerAlgorithm(Enum):
     SLIDINGWINDOW = "sliding_window"
+    STATELOCK = "state_lock"
 
 class ParserType(Enum):
     JSON = "json"

@@ -6,4 +6,5 @@ class ProjectStatus(str, Enum):
     ANALYZING = "analyzing_frames"
     COMPLETED = "completed"
     ERROR = "error"
+    CANCELED = "canceled"
 

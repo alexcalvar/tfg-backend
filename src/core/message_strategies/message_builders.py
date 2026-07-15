@@ -33,14 +33,14 @@ class CloudMessageBuilder(MessageStrategy):
 
         for item in layout:
             if item["type"] == "text":
-                # Añade el bloque de texto donde la estrategia lo haya dictado
+                # añade el bloque de texto donde la estrategia lo haya dictado
                 human_content.append({"type": "text", "text": item["content"]})
             
             elif item["type"] == "image":
                 # recuperar el objeto FramesPath del layout
                 frame_obj: FramesPath = item["content"]
                 
-                # conversion leer el archivo a B64 (lazy evaluation, incluir en la docu)
+                # conversion leer el archivo a B64
                 base64_img = encode_image_base64(frame_obj.frame_path)
                 
                 # incluir en el formato usando el frame_id

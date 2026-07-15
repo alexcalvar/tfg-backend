@@ -1,5 +1,4 @@
 import pytest
-from unittest.mock import patch
 from src.postprocessing.postprocessing_algorithms.sliding_window import SlidingWindowNormalizer
 from src.data.validators import FrameResults
 
@@ -18,16 +17,11 @@ def generar_frames(valores: list[bool]) -> list[FrameResults]:
 # ==========================================
 @pytest.fixture
 def normalizer():
-    """
-    Instancia el algoritmo parcheando el ConfigLoader para no depender
-    del archivo config.properties en el disco duro.
-    """
-    with patch('src.utils.config_loader.ConfigLoader.get_video_float', return_value=2.0):
-        # Configuramos un intervalo ficticio de 2.0 segundos por frame
-        norm = SlidingWindowNormalizer(apply_alg=True)
-        # Forzamos la ventana a 5 (t-2, t-1, t, t+1, t+2) que es tu valor por defecto
-        norm.window_size = 5 
-        return norm
+    """Instancia el algoritmo con un intervalo fijo de 2.0 segundos por frame."""
+    norm = SlidingWindowNormalizer(apply_alg=True, interval=2.0)
+    # Forzamos la ventana a 5 (t-2, t-1, t, t+1, t+2) que es tu valor por defecto
+    norm.window_size = 5
+    return norm
 
 class TestSlidingWindowNormalizer:
 
