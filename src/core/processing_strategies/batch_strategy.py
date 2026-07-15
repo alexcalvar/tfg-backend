@@ -15,11 +15,8 @@ logger = get_logger(__name__)
 
 class BatchStrategy(ProcessingStrategy):
 
-
     def __init__(self, parser: BaseFrameParser): 
         super().__init__(parser)
-
-
 
     def load_prompts(self) -> tuple[str, str]:
         prompts_path = os.path.join(self.config.get_path("config_folder"), "prompts.json")
@@ -35,22 +32,26 @@ class BatchStrategy(ProcessingStrategy):
 
         return system_prompt_final, task_template
 
-
-
-
-    async def process_queue(self, processor: VLMProcessor, user_prompt: str, queue: asyncio.Queue, resultados: list):
+    async def process_queue(self, processor: VLMProcessor, user_prompt: str, queue: asyncio.Queue, resultados: list, cancel_event: asyncio.Event = None):
             
         FRAMES_PER_BATCH = self.config.get_video_int("frames_per_batch")
         flag = True
+        ultimo_frame_id = None
 
         while flag:
+            # --- PUNTO DE CONTROL DE CANCELACIÓN ---
+            if cancel_event and cancel_event.is_set():
+                logger.warning("Cancelación detectada en BatchStrategy. Deteniendo procesamiento de lotes.")
+                self.notify(ProjectStatus.CANCELED, "Procesamiento canceclado", ultimo_frame_id)
+                break
+
             frames_to_analyze = await self._extract_batch(queue, FRAMES_PER_BATCH)
 
             if not frames_to_analyze: 
                 logger.info("Fin de la extracción detectado. Cerrando procesador.")
                 break      
 
-            if len(frames_to_analyze) < FRAMES_PER_BATCH :
+            if len(frames_to_analyze) < FRAMES_PER_BATCH:
                 logger.info("Iniciando proceso de último batch (tamaño inferior al general)")
                 flag = False
 
@@ -63,40 +64,22 @@ class BatchStrategy(ProcessingStrategy):
             for _ in frames_to_analyze:
                 queue.task_done()
 
-
-
-
     async def _extract_batch(self, queue: asyncio.Queue, batch_size: int) -> list[FramesPath]:
         batch = []
-
         while len(batch) < batch_size:
             item = await queue.get()
-
             if item is None:
                 queue.task_done()
                 break
-
             batch.append(item)
-
         return batch
-
-
-
 
     async def _process_batch_interno(self, processor: VLMProcessor, user_prompt: str, batch: list[FramesPath], queue: asyncio.Queue, resultados: list):
         try:
-
-            #construir el formato de peticion adecuado para el tipo de procesamiento especifico
             layout_mensaje = self._build_model_request(user_prompt, batch)
-            
-            # se envia al modelo el tipo de peticion especifica y se espera un string de respuesta
-            respuesta_bruta = await asyncio.to_thread(processor.process_layout, layout_mensaje )
-
-            #  el parser asume toda la responsabilidad de leer el string
-            # y transformarlo en una lista de objetos frameresult
+            respuesta_bruta = await asyncio.to_thread(processor.process_layout, layout_mensaje)
             resultados_parseados = self.parser.parse_batch(respuesta_bruta, batch)
 
-            # guardar resultados
             for frame_result in resultados_parseados:
                 resultados.append(frame_result)
                 logger.info(f"Terminado: frame_{frame_result.frame_id}")
@@ -104,9 +87,6 @@ class BatchStrategy(ProcessingStrategy):
         except Exception as e: 
             logger.error(f"Error analizando el batch o de formato: {e}")
             await self._handle_batch_failure(batch, resultados, queue, f"Fallo de sistema/parseo: {e}")
-
-
-
 
     async def _handle_batch_failure(self, batch: list[FramesPath], resultados: list, queue: asyncio.Queue, motivo: str):
         logger.warning(f"Reintentando batch debido a: {motivo}")
@@ -122,24 +102,15 @@ class BatchStrategy(ProcessingStrategy):
             else:
                 resultados.append(self._crear_resultado(frame_obj.frame_id, False, f"Error Crítico: {motivo}"))    
 
-
-
-
-    def _build_model_request(self, user_prompt : str, batch : list[FramesPath]) -> list:
+    def _build_model_request(self, user_prompt: str, batch: list[FramesPath]) -> list:
         layout_mensaje = []
-        
         for frame in batch:
             layout_mensaje.append({"type": "text", "content": user_prompt})
             layout_mensaje.append({"type": "image", "content": frame})
-
         return layout_mensaje
-
-
-
 
     @staticmethod
     def _crear_resultado(frame_id: int, detectado: bool, descripcion: str) -> FrameResults:
-        """Función de apoyo para crear fallbacks de error."""
         return FrameResults(
             frame_id=frame_id, 
             detectado=detectado,

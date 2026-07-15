@@ -4,7 +4,7 @@ from src.data.validators import FrameResults
 
 class PostProcessingStrategy(ABC):
     """
-    Contrato base (Interfaz) para cualquier funcionalidad que procese 
+    Contrato base  para cualquier funcionalidad que procese 
     los resultados crudos generados por el VLM.
     """
     

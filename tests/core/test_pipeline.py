@@ -92,7 +92,7 @@ class TestVLMPipeline:
         """
         # 1. PREPARACIÓN DEL PRODUCTOR (frame_provider)
         # Simulamos que la extracción mete dos frames en la cola de forma asíncrona
-        async def fake_extract(cola_frames):
+        async def fake_extract(cola_frames, cancel_event=None):
             # Ojo: Los metemos desordenados (ID 2 primero, ID 1 después)
             await cola_frames.put(MagicMock(frame_id=2))
             await cola_frames.put(MagicMock(frame_id=1))
@@ -101,7 +101,7 @@ class TestVLMPipeline:
 
         # 2. PREPARACIÓN DEL CONSUMIDOR (processing_strategy)
         # Simulamos que la estrategia saca los items, genera resultados y hace task_done() para no bloquear
-        async def fake_process_queue(processor, prompt, queue, resultados):
+        async def fake_process_queue(processor, prompt, queue, resultados, cancel_event=None):
             while True:
                 item = await queue.get()
                 if item is None:

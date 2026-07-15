@@ -23,10 +23,10 @@ class FrameResults(BaseModel):
 
 class EventInterval(BaseModel):
     event_id: int
-    start_frame: int      # El ID del primer frame donde se detecta el evento
-    end_frame: int        # El ID del último frame del evento
-    start_timestamp: float # Segundos exactos en el vídeo (start_frame * intervalo)
-    end_timestamp: float   # Segundos exactos en el vídeo (end_frame * intervalo)
+    start_frame: int      
+    end_frame: int        
+    start_timestamp: float 
+    end_timestamp: float   
     #descripcion: str
  
 class SummaryNode(BaseModel):
@@ -35,7 +35,7 @@ class SummaryNode(BaseModel):
     resumen: str
     start_frame : int
     end_frame : int
-    start_timestamp: float # Segundos exactos en el vídeo
+    start_timestamp: float 
     end_timestamp: float
     children: Optional[List['SummaryNode']] = [] # lista recursiva opcional. Por defecto es una lista vacía.
 

@@ -1,18 +1,20 @@
 import os
 import shutil
+import asyncio
 
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form, BackgroundTasks
 
 from src.api.orchestrator import AnalysisOrchestrator
+from src.api.task_registry import TaskRegistry
 from src.data.enums import PostProcessingStr
 
-
+from src.api.task_registry import TaskRegistry
 from src.utils.config_loader import ConfigLoader
 from src.utils.file_utils import load_json, get_list_models
 from src.utils.project_status import ProjectStatus
 from src.utils.logger import get_logger
 
-from src.api.schemas import  HTTPResponse
+from src.api.schemas import HTTPResponse
 
 endpoints = APIRouter()
 
@@ -24,6 +26,7 @@ logger = get_logger(__name__)
 async def analyze_video(
     background_tasks: BackgroundTasks,
     video: UploadFile = File(...),
+    interval_time : float = Form(...),
     user_prompt: str = Form(...),
     vlm_provider: str = Form(...), 
     vlm_model_name: str = Form(...),
@@ -39,6 +42,7 @@ async def analyze_video(
         # delegamos el trabajo sucio al orquestador
         pipeline, project_id = await orchestrator.setup_video_pipeline(
             video_file=video,
+            interval_time=interval_time,
             user_prompt=user_prompt,
             vlm_provider=vlm_provider,
             vlm_model=vlm_model_name,
@@ -51,7 +55,12 @@ async def analyze_video(
         logger.exception("Error durante la orquestación")
         raise HTTPException(status_code=500, detail=f"Error al preparar el análisis: {str(e)}")
 
-    background_tasks.add_task(pipeline.process_video, user_prompt)
+    # instanciar el registro y generar el semáforo para este project_id 
+    registry = TaskRegistry()
+    cancel_event = registry.register(project_id)
+
+    # delegar al background a través de nuestro envoltorio seguro con limpieza automática
+    background_tasks.add_task(run_pipeline_with_cleanup, pipeline, user_prompt, cancel_event, project_id)
 
     return HTTPResponse(
         success=True,
@@ -69,6 +78,7 @@ async def analyze_video(
 async def analyze_video_semantic(
     background_tasks: BackgroundTasks,
     video: UploadFile = File(...),
+    interval_time : float = Form(...),
     user_prompt: str = Form(...),
     vlm_provider: str = Form(...), 
     vlm_model_name: str = Form(...),
@@ -86,6 +96,7 @@ async def analyze_video_semantic(
         pipeline, project_id = await orchestrator.setup_video_pipeline(
             video_file=video,
             user_prompt=user_prompt,
+            interval_time=interval_time,
             vlm_provider=vlm_provider,
             vlm_model=vlm_model_name,
             processing_mode=processing_mode,
@@ -98,8 +109,12 @@ async def analyze_video_semantic(
         logger.exception("Error durante la orquestación")
         raise HTTPException(status_code=500, detail=f"Error al preparar el análisis: {str(e)}")
 
-    # Lanzamos el proceso que ya tiene todo el contexto necesario
-    background_tasks.add_task(pipeline.process_video, user_prompt)
+    # instanciar el registro y generar el semáforo para este project_id único
+    registry = TaskRegistry()
+    cancel_event = registry.register(project_id)
+
+    # lanzamos el proceso que ya tiene todo el contexto necesario, inyectando el semáforo
+    background_tasks.add_task(run_pipeline_with_cleanup, pipeline, user_prompt, cancel_event, project_id)
 
     return HTTPResponse(
         success=True,
@@ -113,8 +128,44 @@ async def analyze_video_semantic(
 
 
 
-@endpoints.get("/api/v1/resums/{project_id}/status", response_model=HTTPResponse, status_code=200)
-@endpoints.get("/api/v1/events/{project_id}/status", response_model=HTTPResponse, status_code=200)
+@endpoints.post("/api/v1/{project_id}/cancel", response_model=HTTPResponse, status_code=200)
+async def cancel_analysis(project_id: str):
+    """
+    Enciende el semáforo de cancelación cooperativa para detener inmediatamente
+    la extracción y análisis del proyecto solicitado.
+    """
+    # prevención básica de seguridad (Path Traversal)
+    if ".." in project_id or "/" in project_id or "\\" in project_id:
+        logger.warning(f"Intento de ataque detectado en cancelación. project_id: {project_id}")
+        raise HTTPException(status_code=400, detail="ID de proyecto inválido.")
+        
+    registry = TaskRegistry()
+    cancel_event = registry.get(project_id)
+    
+    # si no hay evento, significa que el vídeo ya terminó, falló o nunca existió en memoria
+    if not cancel_event:
+        logger.warning(f"Intento de cancelación fallido: El proyecto {project_id} no está activo.")
+        raise HTTPException(
+            status_code=404, 
+            detail=f"No se encontró ningún análisis activo para el proyecto '{project_id}'. Es posible que ya haya finalizado o no exista."
+        )
+    
+    # ponemos el semáforo en rojo
+    cancel_event.set()
+    logger.warning(f"Se ha enviado la señal de cancelación al pipeline del proyecto [{project_id}].")
+    
+    return HTTPResponse(
+        success=True,
+        message="Solicitud de cancelación enviada con éxito. El procesamiento se detendrá de forma limpia.",
+        data={
+            "project_id": project_id,
+            "status": "canceling"
+        }
+    )
+
+
+
+@endpoints.get("/api/v1/{project_id}/status", response_model=HTTPResponse, status_code=200)
 def get_project_status(project_id: str):
     """Consulta si un proyecto está en cola, procesando o finalizado."""
 
@@ -238,14 +289,31 @@ def list_available_models():
 
 
 
+@endpoints.get("/api/v1/providers/llms", response_model=HTTPResponse, status_code=200)
+def list_available_llm_models():
+    """Lee el models_config.json y devuelve los modelos LLM que la API puede usar para el resumen semántico."""
+
+    config_folder_path = config.get_path("config_folder")
+
+    models_config_path = os.path.join(config_folder_path, "models_config.json")
+
+    models_list = get_list_models(models_config_path, model_type="llms")
+
+    return HTTPResponse(
+        success=True,
+        message="Lista de todos los modelos LLM soportados por el sistema",
+        data=models_list
+    )
+
+
+
 @endpoints.delete("/api/v1/{project_id}", response_model=HTTPResponse, status_code=200)
 def delete_project(project_id: str):
     """ Borra un proyecto y todos sus archivos asociados de forma segura."""
 
-    # prevención de path traversal
-    # evitamos que alguien envíe "../../../" para intentar borrar el sistema operativo
+    # prevención de path traversal 
     if ".." in project_id or "/" in project_id or "\\" in project_id:
-        logger.warning(f"Intento de ataque de Path Traversal detectado. project_id: {project_id}")
+        
         raise HTTPException(status_code=400, detail="ID de proyecto inválido. Contiene caracteres no permitidos.")
         
     # validación, rl sistema siempre usa el prefijo project_
@@ -272,3 +340,21 @@ def delete_project(project_id: str):
     except Exception as e:
         logger.error(f"Error crítico al intentar eliminar el directorio del proyecto {project_id}: {e}")
         raise HTTPException(status_code=500, detail="Error interno al intentar liberar los recursos del servidor.")
+
+
+
+
+
+
+async def run_pipeline_with_cleanup(pipeline, user_prompt: str, cancel_event: asyncio.Event, project_id: str):
+    """
+    Ejecuta el pipeline de vídeo en segundo plano asegurando la liberación 
+    del token de cancelación del registro global al finalizar, pase lo que pase.
+    """
+    try:
+        # inyectamos el evento que preparamos en los pasos anteriores
+        await pipeline.process_video(user_prompt, cancel_event)
+    except Exception as e:
+        logger.error(f"Excepción capturada en la ejecución en segundo plano del proyecto {project_id}: {e}")
+    finally:
+        TaskRegistry().unregister(project_id)

@@ -12,7 +12,6 @@ class JsonFrameParser(BaseFrameParser):
         return (
             "INSTRUCCIONES DE FORMATO: Responde ÚNICA Y EXCLUSIVAMENTE con JSON válido. "
             "No incluyas texto explicativo. No uses bloques de código markdown (```json). "
-            "Para un fotograma, devuelve un objeto JSON. Para varios fotogramas, devuelve una lista de objetos JSON. "
             "Claves obligatorias: 'detectado' (booleano) y 'descripcion' (string)."
         )
 
@@ -27,7 +26,7 @@ class JsonFrameParser(BaseFrameParser):
             diccionario = diccionario[0]
 
         if not isinstance(diccionario, dict):
-             raise ValueError(f"Se esperaba un objeto JSON (dict), pero se recibió: {type(diccionario)}")
+             raise ValueError(f"Se esperaba un objeto JSON , pero se recibió: {type(diccionario)}")
             
         return FrameResults(
             frame_id=frame_id, 

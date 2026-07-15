@@ -7,8 +7,8 @@ from src.postprocessing.postprocessing_algorithms.temporal_normalizer import Tem
 
 class SlidingWindowNormalizer(TemporalNormalizer):
     
-    def __init__(self, apply_alg:bool):
-        super().__init__(apply_alg)
+    def __init__(self, apply_alg: bool, interval: float):
+        super().__init__(apply_alg, interval)
         self.window_size = 5
 
 

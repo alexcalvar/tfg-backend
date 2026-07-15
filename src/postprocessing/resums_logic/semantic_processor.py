@@ -18,10 +18,11 @@ logger = get_logger(__name__)
 
 class SemanticAnalyzer(PostProcessingStrategy):
     
-    def __init__(self, llm_instance : BaseChatModel, user_prompt : str):
+    def __init__(self, llm_instance : BaseChatModel, user_prompt : str, interval_time : float):
         super().__init__()
         self.llm = llm_instance
         self.user_prompt = user_prompt
+        self.interval_time = interval_time
         
         self.config = ConfigLoader()
         self.system_prompt = self.load_sys_prompts()
@@ -56,7 +57,7 @@ class SemanticAnalyzer(PostProcessingStrategy):
         """ Convierto los FrameResults extraidos de la respuesta del modelo en los nodos base para 
         la logica de resumenes del arbol de resumenes"""
         logger.info(f"Construyendo base de la pirámide (Nivel 0) con {len(raw_results)} fotogramas...")
-        interval = self.config.get_video_float("frame_interval")
+        interval = self.interval_time
 
         nodes = []
 
@@ -185,7 +186,7 @@ class SemanticAnalyzer(PostProcessingStrategy):
                 logger.warning(f"Error de red/IA en nodo {node_id} (Intento {attempt+1}/{max_retries}). Reintentando en {wait_time}s... Error: {e}")
                 time.sleep(wait_time)
 
-        logger.error(f"¡Fallo crítico! No se pudo resumir el nodo {node_id} tras {max_retries} intentos.")
+        logger.error(f"[Error] : No se pudo resumir el nodo {node_id} tras {max_retries} intentos.")
         return f"[Error en la generación del resumen para el bloque {node_id}]"
     
 

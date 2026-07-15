@@ -11,9 +11,7 @@ class YesNoTextParser(BaseFrameParser):
     def get_format_instructions(self) -> str:
         return (
             "INSTRUCCIONES DE FORMATO: NO uses formato JSON. Responde en texto plano.\n"
-            "- Si es una sola imagen: Responde empezando por 'SÍ' o 'NO', seguido de un guion y tu justificación.\n"
-            "- Si es un lote de imágenes: Responde con exactamente una línea por imagen, siguiendo este patrón estricto:\n"
-            "SÍ/NO - [Tu justificación aquí]\n"
+            "SÍ (en caso de detectar el evento que se pide) o NO (en caso de no detectar el evento que se pide) - [Tu justificación aquí]\n"
             "No añadas saludos, ni introducciones, ni despidas el mensaje."
         )
 

@@ -50,7 +50,7 @@ class AnalysisOrchestrator:
 
 
     async def setup_video_pipeline(self, video_file: UploadFile, user_prompt: str, vlm_provider: str, vlm_model: str, processing_mode: str, 
-                                   postprocessing_type: PostProcessingStr,apply_alg: bool = None, llm_provider: str = None, llm_model: str = None):
+                                   postprocessing_type: PostProcessingStr,interval_time : float,apply_alg: bool = None, llm_provider: str = None, llm_model: str = None):
         """Orquesta toda la preparación y devuelve el pipeline ensamblado."""
         
         # crear el entorno de trabajo
@@ -61,7 +61,7 @@ class AnalysisOrchestrator:
         await self._save_uploaded_file(video_file, video_path)
         
         #construir el frameprovider
-        interval = self.config.get_video_float("frame_interval")
+        interval = interval_time
         frame_provider = VideoLoader(video_path, paths["frames_dir"], interval)
         
         # construir modelos y estrategias
@@ -71,9 +71,10 @@ class AnalysisOrchestrator:
         match postprocessing_type:
             
             case PostProcessingStr.ALGORITHM:
-                if not apply_alg:
+                # Comprobación de identidad estricta: solo fallamos si es 'None'
+                if apply_alg is None:
                     raise ValueError("El modo de eventos requiere seleccionar si quiere aplicar el algoritmo de postprocesamiento")
-                post_strategy = AlgorithmFactory().create_algorithm(apply_alg)
+                post_strategy = AlgorithmFactory().create_algorithm(apply_alg, interval_time)
         
             case PostProcessingStr.SEMANTIC:
                 # Validamos que nos hayan pasado los parámetros del LLM
@@ -81,7 +82,7 @@ class AnalysisOrchestrator:
                     raise ValueError("El modo semántico requiere 'llm_provider' y 'llm_model'.")
                 
                 llm_instance = ModelFactory().load_llm(llm_provider, llm_model)
-                post_strategy = SemanticAnalyzer(llm_instance, user_prompt)
+                post_strategy = SemanticAnalyzer(llm_instance, user_prompt, interval_time)
             
             case _:
                 error_msg = f"Estrategia de postprocesamiento no implementada: {postprocessing_type}"

@@ -1,8 +1,13 @@
 import os
 import json
 import base64
+import shutil
 
 from fastapi import UploadFile
+
+from src.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 def ensure_dir(path: str):
     """crea un directorio de forma segura si no existe"""
@@ -57,6 +62,19 @@ def save_results(data, file_path: str):
 
 
 
+def delete_directory(dir_path: str) -> None:
+
+    if not dir_path or not os.path.exists(dir_path):
+        return
+
+    try:
+        shutil.rmtree(dir_path)
+    except Exception as e:
+        logger.error(f"Error al eliminar el directorio {dir_path}: {e}")
+        raise
+
+
+
 def encode_image_base64(image_path: str) -> str:
     """lee una imagen del disco y la convierte a cadena base64"""
     if not os.path.exists(image_path):
@@ -85,21 +103,21 @@ async def save_upload_file(upload_file: UploadFile, destination_path: str) -> st
 
 
 
-def get_list_models(config_path: str) -> dict:
+def get_list_models(config_path: str, model_type: str = "vlms") -> dict:
     """
-    Devuelve los proveedores y los modelos q soportan
+    Devuelve los proveedores y los modelos q soportan para el tipo indicado
     """
     try:
         config = load_json(config_path)
-        vlms_config = config.get("vlms", {})
-        
+        modelos_config = config.get(model_type, {})
+
         estructura = {
-            proveedor: list(modelos.keys()) 
-            for proveedor, modelos in vlms_config.items()
+            proveedor: list(modelos.keys())
+            for proveedor, modelos in modelos_config.items()
         }
-        
+
         return estructura
 
     except Exception as e:
         print(f"Error al obtener la estructura de proveedores: {e}")
-        return {}        
+        return {}

@@ -20,8 +20,7 @@ class VideoLoader(BaseFrameProvider):
         self.interval = interval
         ensure_dir(output_folder)
 
-
-    async def extract_frames(self, cola_frames : asyncio.Queue ) -> None:
+    async def extract_frames(self, cola_frames: asyncio.Queue, cancel_event: asyncio.Event = None) -> None:
         cap = cv2.VideoCapture(self.video_path)
 
         if cap.isOpened():
@@ -33,65 +32,48 @@ class VideoLoader(BaseFrameProvider):
             else:
                 duration = 0
                 
-            # Agrupamos la info en una sola línea de log elegante
             logger.info(f"Info de Vídeo -> FPS: {fps:.2f} | Frames Totales: {total_frames} | Duración: {duration:.2f}s")
             
             step = math.ceil(fps * self.interval)
-            
-            #captura de fotogramas
             n_frame = 0
             count_frame = 0
-            max_intents = self.config.get_video_int("max_intents_frame") # numero maximo de intentos q se realizan en caso de error en un frame
+            max_intents = self.config.get_video_int("max_intents_frame")
 
             resize_width = self.config.get_video_int("resize_width")
             resize_height = self.config.get_video_int("resize_height")
 
             while cap.isOpened():
+                # --- PUNTO DE CONTROL DE CANCELACIÓN ---
+                if cancel_event and cancel_event.is_set():
+                    logger.warning("Cancelación cooperativa activada en VideoLoader. Deteniendo extracción de frames...")
+                    break
 
-                #ret es un boolean q verifica q se obtuvo un frame , es decir, no se llego al final todavia
                 ret, frame = cap.read()
-
                 if not ret:
                     break
 
-                # optimizar los frames
-                # redimensionar a 640x360 para no saturar la ram con ollama
-                frame_redimensionado = cv2.resize(frame, (resize_width,resize_height ))
-
+                frame_redimensionado = cv2.resize(frame, (resize_width, resize_height))
                 filename = f"frame_{count_frame}.jpg"
                 save_path = os.path.join(self.output_folder, filename)
                 
                 cv2.imwrite(save_path, frame_redimensionado)
 
-                # obtener el tiempo exacto en el que ocurre este frame en el vídeo
                 timestamp_sec = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
-                
-                paquete_frame = FramesPath(count_frame,save_path, max_intents, timestamp_sec)
+                paquete_frame = FramesPath(count_frame, save_path, max_intents, timestamp_sec)
 
-                await cola_frames.put(paquete_frame) # se almacena la ruta en la cola para q luego el procesador acceda a la ruta del framse
-
-                # Usamos DEBUG para no inundar la consola si el vídeo es muy largo
+                await cola_frames.put(paquete_frame)
                 logger.debug(f"Guardado frame nº {count_frame} (Posición real: {n_frame} - Optimizado)")
 
                 n_frame += step
                 count_frame += 1
 
-                #se decide utilizar cap.set para avanzar directametne al frame a analizar en vez de 
-                #avanzar recorriendo todos los frames y solo seleccionando los esperados
                 cap.set(cv2.CAP_PROP_POS_FRAMES, n_frame)  
-
-                # obligamos al bucle a ceder el control 
-                # esto permite que el consumidor envíe la petición a la api del modelo
-                # sin esperar a que acabe el vídeo entero.
                 await asyncio.sleep(0)  
 
         cap.release()
-        logger.info(f"Extracción finalizada. Total de frames enviados a la cola: {count_frame}")
+        logger.info(f"Extracción finalizada o abortada. Total de frames enviados a la cola: {count_frame}")
         
-
     def get_expected_frame_count(self) -> int:
-        """calcula cuántos frames se extraerán antes de iniciar el proceso"""
-        
         cap = cv2.VideoCapture(self.video_path)
         if not cap.isOpened():
             return 0
@@ -106,26 +88,16 @@ class VideoLoader(BaseFrameProvider):
                 return math.ceil(total_video_frames / step) 
         return 0
     
-
-    
     def get_source_name(self) -> str:    
         return os.path.basename(self.video_path)
     
-    
     def cleanup(self) -> None:
-        """
-        Libera los recursos eliminando el archivo de vídeo original del disco 
-        para evitar redundancia de datos y saturación del almacenamiento.
-        """
         try:
             if os.path.exists(self.video_path):
-                # Obtenemos el directorio antes de borrar el archivo
                 video_dir = os.path.dirname(self.video_path)
-                
                 os.remove(self.video_path)
                 logger.info(f"Archivo de vídeo eliminado correctamente: {self.video_path}")
                 
-                # Opcional: Intentamos eliminar la carpeta 'video' si ha quedado vacía
                 if os.path.isdir(video_dir) and not os.listdir(video_dir):
                     os.rmdir(video_dir)
                     logger.debug(f"Directorio de vídeo temporal eliminado: {video_dir}")

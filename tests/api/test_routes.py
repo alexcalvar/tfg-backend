@@ -39,6 +39,7 @@ class TestAPIRoutes:
 
         # 2. Preparar los datos del formulario HTTP (multipart/form-data)
         datos_formulario = {
+            "interval_time": "2.0",
             "user_prompt": "Busca perros",
             "vlm_provider": "google",
             "vlm_model_name": "gemini-1.5-flash",
@@ -67,7 +68,8 @@ class TestAPIRoutes:
     def test_post_analyze_video_rechaza_archivos_no_video(self):
         """Prueba la validación de seguridad del content-type."""
         datos_formulario = {
-            "user_prompt": "x", "vlm_provider": "y", "vlm_model_name": "z", 
+            "interval_time": "2.0",
+            "user_prompt": "x", "vlm_provider": "y", "vlm_model_name": "z",
             "processing_mode": "w", "apply_alg": "true"
         }
         # Intentamos colar un archivo ejecutable como si fuera un vídeo
@@ -98,7 +100,7 @@ class TestAPIRoutes:
             "last_updated": "2026-06-03 10:00:00"
         }
 
-        response = client.get("/api/v1/events/project_123/status")
+        response = client.get("/api/v1/project_123/status")
 
         assert response.status_code == 200
         json_resp = response.json()

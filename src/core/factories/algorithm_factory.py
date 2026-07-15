@@ -2,6 +2,7 @@ from src.data.enums import NormalizerAlgorithm
 from src.utils.config_loader import ConfigLoader
 from src.postprocessing.postprocessing_algorithms.temporal_normalizer import TemporalNormalizer
 from src.postprocessing.postprocessing_algorithms.sliding_window import SlidingWindowNormalizer
+from src.postprocessing.postprocessing_algorithms.state_lock import StateLockNormalizer
 
 from src.utils.logger import get_logger
 
@@ -14,7 +15,7 @@ class AlgorithmFactory:
         self.config = ConfigLoader()
 
     
-    def create_algorithm(self, apply : bool) -> TemporalNormalizer:
+    def create_algorithm(self, apply : bool, interval_time : float) -> TemporalNormalizer:
         """ Método encargado de crear la instancia del algoritmo de postprocesado"""
 
         algorithm_selected = self.config.get_sys_config("normalizer_algorithm")
@@ -28,8 +29,11 @@ class AlgorithmFactory:
         match algorithm_selected:
             
             case NormalizerAlgorithm.SLIDINGWINDOW:
-                return SlidingWindowNormalizer(apply)
-            
+                return SlidingWindowNormalizer(apply, interval_time)
+
+            case NormalizerAlgorithm.STATELOCK:
+                return StateLockNormalizer(apply, interval_time)
+
             case _:
                 raise ValueError(f"[ERROR] Algoritmo de postprocesamiento {algorithm_selected} no soportado ")
             
