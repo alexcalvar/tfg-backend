@@ -12,17 +12,15 @@
         },
         "google": {
             "gemini_rapido": {
-                "model_string": "gemini-1.5-flash",
-                "temperature": 0.0,
-                "max_tokens": 1024,
-                "descripcion": "Modelo multimodal rápido. Excelente para ver colores y procesar frames a alta velocidad."
-            },
-            "gemini_pro": {
-                "model_string": "gemini-1.5-pro",
-                "temperature": 0.0,
-                "max_tokens": 1024,
-                "descripcion": "Modelo multimodal avanzado. Más lento, pero con mayor capacidad de razonamiento visual para escenas complejas."
-            }
+            "model_string": "gemini-2.0-flash",
+            "temperature": 0.0,
+            "max_tokens": 1024
+        },
+        "gemini_pro": {
+            "model_string": "gemini-2.0-flash-thinking-exp",
+            "temperature": 0.0,
+            "max_tokens": 1024
+        }
         },
         "ollama": {
             "llama3.2-vision": {
@@ -68,25 +66,20 @@
     
     "llms": {
         "ollama" : {
-            "groq_inteligente": {
-                "provider": "groq",
-                "model_string": "llama3-70b-8192",
-                "temperature": 0.0,
-                "descripcion": "Cerebro principal en la nube. Muy rápido y excelente razonamiento lógico."
-            },
-            "groq_rapido": {
-                "provider": "groq",
-                "model_string": "llama3-8b-8192",
-                "temperature": 0.0,
-                "descripcion": "Versión ligera de Llama 3. Ideal para pruebas ultrarrápidas."
-            },
             "qwen2.5": {
                 "provider" : "ollama",
                 "model_string": "qwen2.5:7b",
                 "temperature": 0.0,
                 "descripcion": "Qwen 2.5 llm "
                 
+            },
+            "groq_rapido": {
+                "provider": "groq",
+                "model_string": "llama3-8b-8192",
+                "temperature": 0.0,
+                "descripcion": "Versión ligera de Llama 3. Ideal para pruebas ultrarrápidas."
             }
+            
         }
     }
 }

@@ -70,6 +70,8 @@ class BatchStrategy(ProcessingStrategy):
             item = await queue.get()
             if item is None:
                 queue.task_done()
+                #correcion para arreglar bug de olvidar frames reencolados 
+                queue.put_nowait(None)
                 break
             batch.append(item)
         return batch
